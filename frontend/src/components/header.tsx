@@ -42,10 +42,10 @@ const Header: FC<HeaderProps> = () => {
   };
   return (
     <div>
-      <div className="md:min-h-screen h-[60px] z-50 md:w-[20%] w-[100vw]  border-l-0 border  fixed flex md:top-0 left-0 right-0 bottom-0 overflow-hidden ">
-        <div className="md:w-[20%] bg-[#19271e] md:h-[100vh] relative w-full ">
-          <div className="flex md:flex-col md:justify-between h-full md:pb-5">
-            <div className="flex md:flex-col md:gap-9 justify-evenly w-[100vw] h-full  items-center md:pt-10">
+      <div className="min-h-screen w-[20%]  border-l-0 border  fixed flex top-0 left-0 overflow-hidden ">
+        <div className="w-[20%] bg-[#19271e] h-[100vh] relative ">
+          <div className="flex flex-col justify-between h-full pb-5">
+            <div className="flex flex-col gap-9 items-center pt-10">
               <NavLink onClick={() => setConditionalComponent("chat")}>
                 <HiChatBubbleBottomCenter className="text-3xl text-[#878A92]" />
               </NavLink>
@@ -62,7 +62,7 @@ const Header: FC<HeaderProps> = () => {
                 <IoSettingsOutline className="text-3xl text-[#878A92]  " />
               </NavLink>
             </div>
-            <div className="flex h-full items-center pr-3 md:pr-0 justify-center">
+            <div className="flex justify-center">
               <div>
                 <button onClick={handleShowPro}>
                   <CgProfile className="text-3xl text-[#878A92]  " />

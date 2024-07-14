@@ -1,20 +1,26 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface User {
   length: number;
-  map(arg0: (user: any, index: any) => import("react/jsx-runtime").JSX.Element): import("react").ReactNode;
   name: string;
   email: string;
   createdAt: string;
 }
 export interface userState {
   user: User | null;
+  currentUser: null;
+  newMessage: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  conversation: any;
   error: string;
   loading: boolean;
 }
 
 const initialState: userState = {
   user: null,
+  currentUser: null,
+  newMessage: "",
+  conversation: [],
   error: "",
   loading: false,
 };
@@ -34,10 +40,38 @@ export const userSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+
+    sendMessageRequest: (state) => {
+      state.loading = true;
+    },
+    sendMessageSuccess: (state, action: PayloadAction<string[]>) => {
+      state.loading = false;
+      state.conversation = action.payload;
+    },
+    sendMessageFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    // local state
+    setCurrentUser: (state, action: PayloadAction<null>) => {
+      state.currentUser = action.payload;
+    },
+    setNewMessage: (state, action: PayloadAction<string>) => {
+      state.newMessage = action.payload;
+    },
   },
 });
 
-export const { fetchUserFailure, fetchUserRequest, fetchUserSuccess } =
-  userSlice.actions;
+export const {
+  fetchUserFailure,
+  fetchUserRequest,
+  fetchUserSuccess,
+  setCurrentUser,
+  setNewMessage,
+  sendMessageFailure,
+  sendMessageRequest,
+  sendMessageSuccess
+} = userSlice.actions;
 
 export default userSlice.reducer;

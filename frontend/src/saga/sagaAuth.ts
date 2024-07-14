@@ -16,6 +16,9 @@ import {
   fetchUserFailure,
   fetchUserRequest,
   fetchUserSuccess,
+  sendMessageFailure,
+  sendMessageRequest,
+  sendMessageSuccess,
 } from "../slice/userSlice";
 function* registerUser(action: PayloadAction) {
   try {
@@ -83,6 +86,26 @@ function* fetchFriends() {
   }
 }
 
+function* sendMessage(action: PayloadAction) {
+try {
+  const res: AxiosResponse = yield call(
+    axios.post,
+    "http://localhost:5300/api/users/send-message",
+    action.payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    }
+  );
+  yield put(sendMessageSuccess(res.data))
+  console.log(res.data)
+} catch (error: any) {
+  yield put(sendMessageFailure(error.message))
+}
+}
+
 function* watchRegisterUser() {
   yield takeLatest(registerUserRequest.type, registerUser);
 }
@@ -99,6 +122,9 @@ function* watchFetchFriends() {
   yield takeLatest(fetchUserRequest.type, fetchFriends);
 }
 
+function* watchSendMessage() { 
+  yield takeLatest(sendMessageRequest.type, sendMessage)
+}
 // root saga
 export default function* rootSaga() {
   yield all([
@@ -106,5 +132,6 @@ export default function* rootSaga() {
     watchLoginUser(),
     watchLogoutUser(),
     watchFetchFriends(),
+    watchSendMessage(),
   ]);
 }
