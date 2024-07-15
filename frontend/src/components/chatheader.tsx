@@ -3,7 +3,7 @@ import { FC, useEffect } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
-import { fetchUserRequest, setCurrentUser } from "../slice/userSlice";
+import { fetchMessageRequest, fetchUserRequest, setCurrentUser } from "../slice/userSlice";
 import { RootState } from "../store";
 
 interface ChatHeaderProps {}
@@ -19,6 +19,10 @@ const currentFriend =  useSelector((state:RootState) =>state.user.currentUser)
   useEffect(() => {
     dispatch(fetchUserRequest());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchMessageRequest(currentFriend?._id))
+  },[currentFriend?._id,dispatch])
 
   return (
     <div className="p-5">

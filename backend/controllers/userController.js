@@ -73,11 +73,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
   }
 });
 
-//send messages
 
-const sendMessage = asyncHandler(async (req, res) => { 
-   console.log(res.body)
-})
 
 //  get user profile
 
@@ -129,5 +125,4 @@ export {
   getUserProfile,
   updateUserProfile,
   getAllUsers,
-  sendMessage
 };

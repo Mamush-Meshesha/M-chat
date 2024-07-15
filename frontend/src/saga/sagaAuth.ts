@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { call, all, takeLatest, put } from "redux-saga/effects";
+import { call, all, takeLatest, put, takeEvery } from "redux-saga/effects";
 import {
   loginUserFailure,
   loginUserRequest,
@@ -13,6 +13,8 @@ import {
 import axios, { AxiosResponse } from "axios";
 import { PayloadAction } from "@reduxjs/toolkit";
 import {
+  fetchMessageRequest,
+  fetchMessageSuccess,
   fetchUserFailure,
   fetchUserRequest,
   fetchUserSuccess,
@@ -86,26 +88,40 @@ function* fetchFriends() {
   }
 }
 
-function* sendMessage(action: PayloadAction) {
-try {
-  const res: AxiosResponse = yield call(
-    axios.post,
-    "http://localhost:5300/api/users/send-message",
-    action.payload,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      withCredentials: true,
-    }
-  );
-  yield put(sendMessageSuccess(res.data))
-  console.log(res.data)
-} catch (error: any) {
-  yield put(sendMessageFailure(error.message))
-}
+function* sendMessageSaga(action: PayloadAction) {
+  try {
+    const res: AxiosResponse = yield call(
+      axios.post,
+      "http://localhost:5300/api/users/send-message",
+      action.payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    yield put(sendMessageSuccess(res.data));
+    console.log(res.data);
+  } catch (error: any) {
+    yield put(sendMessageFailure(error.message));
+  }
 }
 
+function* fetchMessageSaga(action: PayloadAction) {
+  try {
+    const res: AxiosResponse = yield call(
+      axios.get,
+      `http://localhost:5300/api/users/message/${action.payload}`,
+      {
+        withCredentials: true,
+      }
+    );
+    yield put(fetchMessageSuccess(res.data));
+  } catch (error: any) {
+    yield put(fetchUserFailure(error.message));
+  }
+}
 function* watchRegisterUser() {
   yield takeLatest(registerUserRequest.type, registerUser);
 }
@@ -122,8 +138,12 @@ function* watchFetchFriends() {
   yield takeLatest(fetchUserRequest.type, fetchFriends);
 }
 
-function* watchSendMessage() { 
-  yield takeLatest(sendMessageRequest.type, sendMessage)
+function* watchSendMessage() {
+  yield takeLatest(sendMessageRequest.type, sendMessageSaga);
+}
+
+function* watchFetchMessageSaga() {
+  yield takeEvery(fetchMessageRequest.type, fetchMessageSaga);
 }
 // root saga
 export default function* rootSaga() {
@@ -133,5 +153,6 @@ export default function* rootSaga() {
     watchLogoutUser(),
     watchFetchFriends(),
     watchSendMessage(),
+    watchFetchMessageSaga(),
   ]);
 }

@@ -8,8 +8,8 @@ import {
   getUserProfile,
   updateUserProfile,
   getAllUsers,
-  sendMessage,
 } from "../controllers/userController.js";
+import {fetchMessage, sendMessage} from "../controllers/messageController.js"
 
 router.route("/").post(registerUser);
 router.post("/logout", logoutUser);
@@ -20,5 +20,6 @@ router
   .put(protect, updateUserProfile);
 router.get("/get-friends", protect, getAllUsers);
 router.post("/send-message", protect, sendMessage)
+router.get("/message/:id", protect,fetchMessage)
 
 export default router;

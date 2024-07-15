@@ -6,21 +6,29 @@ interface User {
   email: string;
   createdAt: string;
 }
+
+interface Send {
+  message: string;
+  reciverId: string;
+  senderName: string;
+}
 export interface userState {
   user: User | null;
   currentUser: null;
   newMessage: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  conversation: any;
+  conversation: Send[]
+  recConversation: Send[]
   error: string;
   loading: boolean;
 }
+
 
 const initialState: userState = {
   user: null,
   currentUser: null,
   newMessage: "",
   conversation: [],
+  recConversation: [],
   error: "",
   loading: false,
 };
@@ -41,14 +49,28 @@ export const userSlice = createSlice({
       state.error = action.payload;
     },
 
-    sendMessageRequest: (state) => {
+    sendMessageRequest: (state, action: PayloadAction<Send>) => {
       state.loading = true;
+      state.recConversation.push(action.payload);
     },
-    sendMessageSuccess: (state, action: PayloadAction<string[]>) => {
+    sendMessageSuccess: (state, action: PayloadAction<Send[]>) => {
       state.loading = false;
       state.conversation = action.payload;
+      state.newMessage =""
     },
     sendMessageFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    fetchMessageRequest: (state) => {
+      state.loading = true;
+    },
+    fetchMessageSuccess: (state, action: PayloadAction<Send[]>) => {
+      state.recConversation = action.payload;
+      state.loading = false;
+    },
+    fetchMessageFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
@@ -71,7 +93,10 @@ export const {
   setNewMessage,
   sendMessageFailure,
   sendMessageRequest,
-  sendMessageSuccess
+  sendMessageSuccess,
+  fetchMessageFailure,
+  fetchMessageRequest,
+  fetchMessageSuccess
 } = userSlice.actions;
 
 export default userSlice.reducer;

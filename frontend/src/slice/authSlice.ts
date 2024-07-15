@@ -9,6 +9,7 @@ interface User {
 interface auUser {
   email: string;
   password: string;
+  name: string
 }
 export interface AuthStateProps {
   user: User[];

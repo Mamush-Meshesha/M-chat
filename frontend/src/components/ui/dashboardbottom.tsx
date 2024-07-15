@@ -8,25 +8,29 @@ import { RootState } from "../../store/index";
 import { sendMessageRequest, setNewMessage } from "../../slice/userSlice";
 
 interface DashboardbottomProps {}
-const Dashboardbottom: FC<DashboardbottomProps> = () => {
-  const dispatch = useDispatch()
-  const newMessage = useSelector((state: RootState) => state.user.newMessage)
-  const currentUserChat = useSelector((state: RootState) => state.user.currentUser)
-  const {name} = useSelector((state:RootState) => state.auth.auUser)
-  const handleInput = (e: any) => {
-    dispatch(setNewMessage(e.target.value))
-  }
+const Dashboardbottom: FC<DashboardbottomProps> = ({scrollRef}) => {
+  const dispatch = useDispatch();
+  const newMessage = useSelector((state: RootState) => state.user.newMessage);
+  const currentUserChat = useSelector(
+    (state: RootState) => state.user.currentUser
+  );
+  const { name } = useSelector((state: RootState) => state.auth.auUser);
 
-  const sendMessage = (e) => {
-    e.preventDefault()
+
+  const handleInput = (e: any) => {
+    dispatch(setNewMessage(e.target.value));
+  };
+
+  const sendMessage = (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
     const data = {
       message: newMessage,
-      reciverId: currentUserChat?._id,
-      senderName: name
-    }
-    dispatch(sendMessageRequest(data))
-    console.log(data)
-  }
+      resiverId: currentUserChat?._id,
+      senderName: name,
+    };
+ dispatch(sendMessageRequest(data));
+  };
 
   return (
     <div className="bg-[#E5DDD5] h-20 w-[80%] ml-[20%] border-t  absolute bottom-0 left-0 right-0 ">

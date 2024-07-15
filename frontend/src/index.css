@@ -27,3 +27,18 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #c5b4; 
 }
+
+@keyframes fadeInRightToLeft {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-500);
+  }
+}
+
+.fadeInRightToLeft {
+  animation: fadeInRightToLeft 6s ease-in-out infinite;
+}
