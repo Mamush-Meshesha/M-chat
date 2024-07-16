@@ -30,12 +30,13 @@ html {
 
 @keyframes fadeInRightToLeft {
   from {
-    opacity: 0;
+    opacity: .3;
     transform: translateX(100px);
   }
   to {
     opacity: 1;
     transform: translateX(-500);
+    transform: transition 5s ;
   }
 }
 

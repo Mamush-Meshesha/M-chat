@@ -5,6 +5,8 @@ import Header from "../components/header";
 import { FaCheck } from "react-icons/fa6";
 import {  useSelector } from "react-redux";
 import { RootState } from "../store";
+import {io} from "socket.io-client"
+import { setActiveUser } from "../slice/userSlice";
 
 interface HomeProps {}
 
@@ -18,7 +20,22 @@ const Home: FC<HomeProps> = () => {
   const authUser = useSelector((state: RootState) => state.auth.auUser);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const socket = useRef()
 
+  useEffect(() => {
+    socket.current = io("ws://localhost:8000")
+  })
+  useEffect(() => {
+    socket.current?.emit("addUser", authUser._id, authUser)
+  })
+
+  useEffect(() => {
+    socket.current?.on("getUsers", (users) => { 
+      const filterUser = users.filter(user => user.userId !== authUser._id)
+      setActiveUser(filterUser)
+      console.log(filterUser)
+    })
+  })
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });

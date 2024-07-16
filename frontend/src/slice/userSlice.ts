@@ -18,6 +18,7 @@ export interface userState {
   newMessage: string;
   conversation: Send[]
   recConversation: Send[]
+  activeUser: Send[]
   error: string;
   loading: boolean;
 }
@@ -29,6 +30,7 @@ const initialState: userState = {
   newMessage: "",
   conversation: [],
   recConversation: [],
+  activeUser: [],
   error: "",
   loading: false,
 };
@@ -49,9 +51,8 @@ export const userSlice = createSlice({
       state.error = action.payload;
     },
 
-    sendMessageRequest: (state, action: PayloadAction<Send>) => {
+    sendMessageRequest: (state) => {
       state.loading = true;
-      state.recConversation.push(action.payload);
     },
     sendMessageSuccess: (state, action: PayloadAction<Send[]>) => {
       state.loading = false;
@@ -82,6 +83,9 @@ export const userSlice = createSlice({
     setNewMessage: (state, action: PayloadAction<string>) => {
       state.newMessage = action.payload;
     },
+    setActiveUser: (state,action) =>{
+      state.activeUser = action.payload
+    }
   },
 });
 
@@ -96,7 +100,8 @@ export const {
   sendMessageSuccess,
   fetchMessageFailure,
   fetchMessageRequest,
-  fetchMessageSuccess
+  fetchMessageSuccess,
+  setActiveUser
 } = userSlice.actions;
 
 export default userSlice.reducer;
