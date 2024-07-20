@@ -15,16 +15,16 @@ import Modal from "./ui/promodal";
 
 interface HeaderProps {}
 
-const Header: FC<HeaderProps> = () => {
+const Header: FC<HeaderProps> = ({activeUser}) => {
   const [conditionalComponent, setConditionalComponent] =
     useState<string>("chat");
 
   const renderConditionalComponent = () => {
     switch (conditionalComponent) {
       case "chat":
-        return <ChatHeader />;
+        return <ChatHeader activeUser={activeUser} />;
       case "contact":
-        return <ContactHeader />;
+        return <ContactHeader  />;
       case "calling":
         return <CallingHeader />;
       case "group":

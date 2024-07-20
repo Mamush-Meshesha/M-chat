@@ -1,22 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FC, useEffect, useRef } from "react";
+import { FC, useEffect } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
-import { fetchMessageRequest, fetchUserRequest, setActiveUser, setCurrentUser } from "../slice/userSlice";
+import { fetchMessageRequest, fetchUserRequest, setCurrentUser } from "../slice/userSlice";
 import { RootState } from "../store";
-import { io } from "socket.io-client";
 
 interface ChatHeaderProps {}
 
-const ChatHeader: FC<ChatHeaderProps> = () => {
+const ChatHeader: FC<ChatHeaderProps> = ({activeUser}) => {
   const dispatch = useDispatch();
   const friends = useSelector((state: RootState) => state.user.user);
   const currentFriend = useSelector((state: RootState) => state.user.currentUser)
-  const activeUser = useSelector((state: RootState) => state.user.activeUser)
-    const authUser = useSelector((state: RootState) => state.auth.auUser);
-
-  const handleToSendMessage = (user: any) => {
+   const handleToSendMessage = (user: any) => {
     dispatch(setCurrentUser(user));
   };
  
@@ -28,22 +24,8 @@ const ChatHeader: FC<ChatHeaderProps> = () => {
   useEffect(() => {
     dispatch(fetchMessageRequest(currentFriend?._id))
   },[currentFriend?._id,dispatch])
-  const socket = useRef();
 
-  useEffect(() => {
-    socket.current = io("ws://localhost:8000");
-  });
-  useEffect(() => {
-    socket.current?.emit("addUser", authUser._id, authUser);
-  });
 
-  useEffect(() => {
-    socket.current?.on("getUsers", (users) => {
-      const filterUser = users.filter((user) => user.userId !== authUser._id);
-     dispatch(setActiveUser(filterUser))
-      console.log(filterUser);
-    });
-  });
   return (
     <div className="p-5">
       <div>
@@ -67,12 +49,11 @@ const ChatHeader: FC<ChatHeaderProps> = () => {
                     onClick={() => handleToSendMessage(user)}
                     className={
                       currentFriend?._id === user._id
-                        ? "bg-[#c7c7c7] rounded-sm"
-                        : "hover:bg-[#b9b7b7] "
+                        ? "bg-[#adadad] rounded-sm"
+                        : "hover:bg-[#b3b3b3] "
                     }
                   >
                     <div className="flex gap-3 items-center px-3 relative  cursor-pointer hover:bg-[#e0e0e0]  active:scale-90  h-10 w-full rounded-sm">
-                      <span className="w-3 h-3 rounded-full bg-green-600 absolute right-0  bottom-0 "></span>
                       <img
                         src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVE13aD0sNpjODp_e3nB4SOUNWw2I_R6VpfoUfU4ZbRTIIZ2aq"
                         alt=""
@@ -99,11 +80,11 @@ const ChatHeader: FC<ChatHeaderProps> = () => {
                         alt=""
                         className="w-7 h-7 rounded-full object-cover"
                       />
-                      <h1 className="font-thin">{user.name}</h1>
+                    <h1 className="font-thin">{ user.authUser.name}</h1>
                     </NavLink>
                   </div>
-                ))
-              : "your friend is not Online"}
+              ))
+              : "your friend is not Online"} 
           </div>
         </div>
       </div>

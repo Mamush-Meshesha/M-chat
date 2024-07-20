@@ -1,4 +1,5 @@
-import { FC, useEffect, useRef } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { FC, useEffect, useRef, useState } from "react";
 import Dashboardheader from "../components/ui/dashboardheader";
 import Dashboardbottom from "../components/ui/dashboardbottom";
 import Header from "../components/header";
@@ -6,7 +7,6 @@ import { FaCheck } from "react-icons/fa6";
 import {  useSelector } from "react-redux";
 import { RootState } from "../store";
 import {io} from "socket.io-client"
-import { setActiveUser } from "../slice/userSlice";
 
 interface HomeProps {}
 
@@ -18,39 +18,39 @@ const Home: FC<HomeProps> = () => {
     (state: RootState) => state.user.recConversation
   );
   const authUser = useSelector((state: RootState) => state.auth.auUser);
-
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeUser,setActiveUser] = useState([])
   const socket = useRef()
 
   useEffect(() => {
     socket.current = io("ws://localhost:8000")
-  })
-  useEffect(() => {
-    socket.current?.emit("addUser", authUser._id, authUser)
-  })
+  }) 
 
   useEffect(() => {
-    socket.current?.on("getUsers", (users) => { 
-      const filterUser = users.filter(user => user.userId !== authUser._id)
-      setActiveUser(filterUser)
-      console.log(filterUser)
-    })
+    socket.current.emit("addUser", authUser._id, authUser)
   })
+ 
+  useEffect(() => {
+    socket.current.on("getUsers", (users) => {
+      const filteredUser = users.filter((user) => user.userId !== authUser._id);
+      setActiveUser(filteredUser);
+    });
+  }, [socket, authUser._id]);
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [recConversation]);
+  }, []);
 
   return (
     <div>
-      <Header />
+      <Header activeUser ={activeUser}  />
       <div
         className="!w-[80%] ml-[20%] h-screen mb-[60px] md:mb-0"
         style={{ backgroundImage: `url("./back.png")` }}
       >
         <div>
-          <Dashboardheader currentUserChat={currentUserChat} />
+          <Dashboardheader activeUser={activeUser} currentUserChat={currentUserChat} />
         </div>
         {currentUserChat ? (
           <div className="h-[calc(100%-85px)] overflow-y-scroll">

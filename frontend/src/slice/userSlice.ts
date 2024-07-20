@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface User {
+  [x: string]: any;
   length: number;
   name: string;
   email: string;
