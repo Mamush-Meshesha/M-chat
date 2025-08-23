@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from "react";
+import { FC, useState, useEffect, useRef, useMemo } from "react";
 import {
   IoCall,
   IoCallOutline,
@@ -9,6 +9,7 @@ import {
   IoClose,
 } from "react-icons/io5";
 import { BsThreeDots } from "react-icons/bs";
+import { IoDesktop } from "react-icons/io5";
 import callingService from "../../services/callingService";
 
 interface CallDialogProps {
@@ -46,12 +47,36 @@ const CallDialog: FC<CallDialogProps> = ({
   const [isConnecting, setIsConnecting] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [remoteScreenShareStream, setRemoteScreenShareStream] =
+    useState<MediaStream | null>(null);
+
+  // Get the actual call type from the calling service or fallback to prop
+  const actualCallType = useMemo(() => {
+    // Check if we have an active call and what type it actually is
+    const activeCall = callingService.getCurrentCall();
+    if (activeCall && activeCall.callData) {
+      return activeCall.callData.callType;
+    }
+    return callType;
+  }, [callType, callingService]);
+
+  // Check if this is actually a video call (has video tracks)
+  const isActuallyVideoCall = useMemo(() => {
+    if (!remoteStream) return false;
+    const videoTracks = remoteStream.getVideoTracks();
+    return (
+      videoTracks.length > 0 &&
+      videoTracks.some((track) => track.readyState === "live")
+    );
+  }, [remoteStream]);
 
   const durationRef = useRef<NodeJS.Timeout | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localAudioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const remoteScreenShareRef = useRef<HTMLVideoElement>(null);
 
   // Handle incoming call
   useEffect(() => {
@@ -145,16 +170,88 @@ const CallDialog: FC<CallDialogProps> = ({
       );
       setRemoteStream(stream);
 
-      if (callType === "video") {
-        console.log("📹 Video call - remote stream received");
-        // Ensure remote video element is updated
-        setTimeout(() => {
-          if (remoteVideoRef.current && stream) {
-            remoteVideoRef.current.srcObject = stream;
-            console.log("✅ Remote video element updated");
-          }
-        }, 100);
+      // Always handle remote stream regardless of call type
+      console.log("🔄 Processing remote stream for call type:", callType);
+
+      // Log video tracks specifically
+      const videoTracks = stream.getVideoTracks();
+      console.log(
+        "📹 Video tracks in remote stream:",
+        videoTracks.map((t) => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+          id: t.id,
+        }))
+      );
+
+      // Log ALL tracks in detail
+      console.log("🎵 ALL tracks in remote stream:", {
+        totalTracks: stream.getTracks().length,
+        audioTracks: stream.getAudioTracks().length,
+        videoTracks: videoTracks.length,
+        trackDetails: stream.getTracks().map((t, index) => ({
+          index,
+          kind: t.kind,
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+          id: t.id,
+          label: t.label,
+        })),
+      });
+
+      // Log stream properties
+      console.log("🎵 Stream properties:", {
+        id: stream.id,
+        active: stream.active,
+        onaddtrack: !!stream.onaddtrack,
+        onremovetrack: !!stream.onremovetrack,
+      });
+
+      // Check if this is a MediaStream object
+      if (stream instanceof MediaStream) {
+        console.log("✅ Stream is valid MediaStream object");
+      } else {
+        console.log("❌ Stream is NOT a MediaStream object:", typeof stream);
       }
+
+      // Ensure remote video element is updated (for both video and audio calls)
+      setTimeout(() => {
+        if (remoteVideoRef.current && stream) {
+          remoteVideoRef.current.srcObject = stream;
+          console.log("✅ Remote video element updated");
+
+          // Only try to play video if there are video tracks
+          if (videoTracks.length > 0) {
+            remoteVideoRef.current
+              .play()
+              .catch((e) => console.log("Remote video play:", e));
+            // Make sure video is not hidden
+            remoteVideoRef.current.style.display = "block";
+            remoteVideoRef.current.style.visibility = "visible";
+          }
+
+          // Log video element properties
+          console.log("📹 Video element properties:", {
+            srcObject: remoteVideoRef.current.srcObject,
+            readyState: remoteVideoRef.current.readyState,
+            videoWidth: remoteVideoRef.current.videoWidth,
+            videoHeight: remoteVideoRef.current.videoHeight,
+            currentTime: remoteVideoRef.current.currentTime,
+            duration: remoteVideoRef.current.duration,
+            paused: remoteVideoRef.current.paused,
+            ended: remoteVideoRef.current.ended,
+          });
+        } else {
+          console.log("⚠️ Remote video ref not available:", {
+            hasRef: !!remoteVideoRef.current,
+            hasStream: !!stream,
+            refCurrent: remoteVideoRef.current,
+          });
+        }
+      }, 100);
     };
 
     return () => {
@@ -169,18 +266,117 @@ const CallDialog: FC<CallDialogProps> = ({
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       console.log("📹 Setting local video stream:", localStream);
+      console.log("📹 Local stream tracks:", {
+        total: localStream.getTracks().length,
+        audio: localStream.getAudioTracks().length,
+        video: localStream.getVideoTracks().length,
+      });
+
+      if (localStream.getVideoTracks().length > 0) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        console.log("📹 Video track details:", {
+          id: videoTrack.id,
+          enabled: videoTrack.enabled,
+          readyState: videoTrack.readyState,
+          muted: videoTrack.muted,
+        });
+      }
+
       localVideoRef.current.srcObject = localStream;
+
       // Ensure video plays
-      localVideoRef.current.play().catch(console.error);
+      localVideoRef.current.play().catch((error) => {
+        console.error("❌ Local video play failed:", error);
+        console.error("❌ Video element state:", {
+          readyState: localVideoRef.current?.readyState,
+          videoWidth: localVideoRef.current?.videoWidth,
+          videoHeight: localVideoRef.current?.videoHeight,
+          paused: localVideoRef.current?.paused,
+        });
+      });
+
+      // Log video element state after setting stream
+      console.log("📹 Local video element state after setting stream:", {
+        readyState: localVideoRef.current.readyState,
+        videoWidth: localVideoRef.current.videoWidth,
+        videoHeight: localVideoRef.current.videoHeight,
+        paused: localVideoRef.current.paused,
+        srcObject: !!localVideoRef.current.srcObject,
+      });
+    } else {
+      console.log("❌ Cannot set local video stream:", {
+        hasRef: !!localVideoRef.current,
+        hasStream: !!localStream,
+        ref: localVideoRef.current,
+        stream: localStream,
+      });
     }
   }, [localStream]);
+
+  // Debug ref availability
+  useEffect(() => {
+    console.log("🔍 Video refs status:", {
+      localVideoRef: !!localVideoRef.current,
+      remoteVideoRef: !!remoteVideoRef.current,
+      localAudioRef: !!localAudioRef.current,
+      remoteAudioRef: !!remoteAudioRef.current,
+      hasLocalStream: !!localStream,
+      hasRemoteStream: !!remoteStream,
+    });
+  }, [localStream, remoteStream]);
+
+  // Debug component mount and ref creation
+  useEffect(() => {
+    console.log("🎬 CallDialog mounted with refs:", {
+      localVideoRef: localVideoRef.current,
+      remoteVideoRef: remoteVideoRef.current,
+      localAudioRef: localAudioRef.current,
+      remoteAudioRef: remoteAudioRef.current,
+    });
+  }, []);
+
+  // Listen for call type changes from calling service
+  useEffect(() => {
+    const handleCallTypeChange = (data: any) => {
+      console.log("🔄 CallDialog: Call type changed:", data);
+      console.log("🔄 Previous call type:", callType);
+      console.log("🔄 New call type:", data.newCallType);
+      console.log("🔄 Reason:", data.reason);
+
+      // Update the call type in the calling service
+      if (callingService.activeCall) {
+        callingService.activeCall.callData.callType = data.newCallType;
+        console.log("✅ Call type updated in calling service");
+      }
+    };
+
+    // Add event listener for call type changes
+    callingService.socket?.on("callTypeChanged", handleCallTypeChange);
+
+    return () => {
+      callingService.socket?.off("callTypeChanged", handleCallTypeChange);
+    };
+  }, [callingService]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       console.log("📹 Setting remote video stream:", remoteStream);
       remoteVideoRef.current.srcObject = remoteStream;
-      // Ensure video plays
-      remoteVideoRef.current.play().catch(console.error);
+      // Ensure video plays and is visible
+      remoteVideoRef.current
+        .play()
+        .catch((e) => console.log("Remote video play:", e));
+      // Make sure video is not hidden
+      remoteVideoRef.current.style.display = "block";
+      remoteVideoRef.current.style.visibility = "visible";
+      // Log video element state
+      console.log("📹 Remote video element state:", {
+        display: remoteVideoRef.current.style.display,
+        visibility: remoteVideoRef.current.style.visibility,
+        width: remoteVideoRef.current.videoWidth,
+        height: remoteVideoRef.current.videoHeight,
+        readyState: remoteVideoRef.current.readyState,
+      });
     }
   }, [remoteStream]);
 
@@ -191,6 +387,39 @@ const CallDialog: FC<CallDialogProps> = ({
       localAudioRef.current.muted = true; // Mute local audio to prevent echo
     }
   }, [localStream]);
+
+  // Check for remote screen share
+  useEffect(() => {
+    const checkScreenShare = () => {
+      const screenShareStream = callingService.getRemoteScreenShareStream();
+      if (screenShareStream && screenShareStream !== remoteScreenShareStream) {
+        console.log(
+          "🖥️ Remote screen share stream detected:",
+          screenShareStream
+        );
+        setRemoteScreenShareStream(screenShareStream);
+      }
+    };
+
+    // Check immediately
+    checkScreenShare();
+
+    // Check periodically
+    const interval = setInterval(checkScreenShare, 1000);
+
+    return () => clearInterval(interval);
+  }, [remoteScreenShareStream]);
+
+  // Set remote screen share video stream
+  useEffect(() => {
+    if (remoteScreenShareRef.current && remoteScreenShareStream) {
+      console.log("🖥️ Setting remote screen share video stream");
+      remoteScreenShareRef.current.srcObject = remoteScreenShareStream;
+      remoteScreenShareRef.current.play().catch((error) => {
+        console.error("❌ Remote screen share video play failed:", error);
+      });
+    }
+  }, [remoteScreenShareStream]);
 
   useEffect(() => {
     if (remoteAudioRef.current && remoteStream) {
@@ -295,6 +524,19 @@ const CallDialog: FC<CallDialogProps> = ({
             if (localVideoRef.current && stream) {
               localVideoRef.current.srcObject = stream;
               console.log("✅ Local video element connected");
+              // Ensure video plays
+              localVideoRef.current
+                .play()
+                .catch((e) => console.log("Local video play:", e));
+            }
+          }, 100);
+        } else if (callData.callType === "audio" && stream) {
+          console.log("🎵 Audio call accepted, setting up audio elements...");
+          // For audio calls, ensure audio elements are connected
+          setTimeout(() => {
+            if (localAudioRef.current && stream) {
+              localAudioRef.current.srcObject = stream;
+              console.log("✅ Local audio element connected");
             }
           }, 100);
         }
@@ -407,6 +649,27 @@ const CallDialog: FC<CallDialogProps> = ({
     }
   };
 
+  // Handle screen sharing
+  const handleScreenShare = async () => {
+    try {
+      if (isScreenSharing) {
+        console.log("🖥️ Stopping screen share...");
+        callingService.stopScreenShare();
+        setIsScreenSharing(false);
+      } else {
+        console.log("🖥️ Starting screen share...");
+        const success = await callingService.startScreenShare();
+        if (success) {
+          setIsScreenSharing(true);
+        } else {
+          console.error("❌ Failed to start screen sharing");
+        }
+      }
+    } catch (error) {
+      console.error("❌ Screen share error:", error);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -455,11 +718,20 @@ const CallDialog: FC<CallDialogProps> = ({
           </p>
           {isCallActive && remoteStream && (
             <p className="text-green-600 text-sm mt-1">
-              {callType === "video"
+              {isActuallyVideoCall
                 ? "📹 Video & Audio Connected"
                 : "🎵 Audio Connected"}
             </p>
           )}
+
+          {/* Show fallback notification if video call became audio */}
+          {isCallActive &&
+            callType === "video" &&
+            callData?.callType === "audio" && (
+              <p className="text-yellow-600 text-sm mt-1">
+                ⚠️ Video unavailable, audio-only mode
+              </p>
+            )}
           {isConnecting && (
             <p className="text-blue-600 text-sm mt-2">Connecting...</p>
           )}
@@ -497,23 +769,113 @@ const CallDialog: FC<CallDialogProps> = ({
                   ref={remoteVideoRef}
                   autoPlay
                   playsInline
+                  muted={false}
                   className="w-full h-full object-cover"
-                  style={{ transform: "scaleX(-1)" }} // Mirror the remote video
+                  style={{
+                    transform: "scaleX(-1)", // Mirror the remote video
+                    display: "block",
+                    visibility: "visible",
+                    minHeight: "128px",
+                    minWidth: "100%",
+                  }}
                 />
                 <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
                   {callerName}
                 </div>
+                {/* Show video status */}
+                {!isActuallyVideoCall && (
+                  <div className="absolute top-2 left-2 bg-blue-500 bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                    Audio Only
+                  </div>
+                )}
               </div>
             )}
 
             {/* Show loading state when waiting for remote video */}
-            {isCallActive && !remoteStream && callType === "video" && (
+            {isCallActive && !remoteStream && actualCallType === "video" && (
               <div className="mt-4 relative bg-gray-100 rounded-lg overflow-hidden h-32 flex items-center justify-center">
                 <div className="text-gray-500 text-sm">
                   Waiting for video...
                 </div>
               </div>
             )}
+
+            {/* Show audio-only indicator when video call becomes audio */}
+            {isCallActive &&
+              remoteStream &&
+              !isActuallyVideoCall &&
+              actualCallType === "video" && (
+                <div className="mt-4 relative bg-gray-100 rounded-lg overflow-hidden h-32 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-gray-500 text-sm mb-2">
+                      Video unavailable
+                    </div>
+                    <div className="text-green-500 text-xs">
+                      Audio call active
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            {/* Debug info for video calls */}
+            {isCallActive && actualCallType === "video" && (
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                Video Debug:{" "}
+                {remoteStream
+                  ? `Stream: ✅ (${
+                      remoteStream.getVideoTracks().length
+                    } video tracks)`
+                  : "Stream: ✅"}{" "}
+                | Element: {remoteVideoRef.current ? "✅" : "❌"} | Actual Call
+                Type: {actualCallType} | Has Video:{" "}
+                {isActuallyVideoCall ? "✅" : "❌"}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Screen Share Display */}
+        {isScreenSharing && (
+          <div className="mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-blue-700 flex items-center">
+                  🖥️ Screen Sharing Active
+                </h4>
+                <button
+                  onClick={handleScreenShare}
+                  className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition-colors"
+                >
+                  Stop Sharing
+                </button>
+              </div>
+              <div className="text-xs text-blue-600">
+                Your screen is being shared with {callerName}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Remote Screen Share Display */}
+        {remoteScreenShareStream && (
+          <div className="mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-green-700 flex items-center">
+                  🖥️ {callerName} is sharing their screen
+                </h4>
+              </div>
+              <div className="relative bg-gray-100 rounded-lg overflow-hidden h-48">
+                <video
+                  ref={remoteScreenShareRef}
+                  autoPlay
+                  playsInline
+                  muted={false}
+                  className="w-full h-full object-contain"
+                  style={{ backgroundColor: "#000" }}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -548,7 +910,7 @@ const CallDialog: FC<CallDialogProps> = ({
           </button>
 
           {/* Video Toggle Button (for video calls) */}
-          {callType === "video" && (
+          {actualCallType === "video" && isActuallyVideoCall && (
             <button
               onClick={toggleVideo}
               className={`p-4 rounded-full transition-colors duration-200 ${
@@ -565,6 +927,19 @@ const CallDialog: FC<CallDialogProps> = ({
               )}
             </button>
           )}
+
+          {/* Screen Share Button */}
+          <button
+            onClick={handleScreenShare}
+            className={`p-4 rounded-full transition-colors duration-200 ${
+              isScreenSharing
+                ? "bg-blue-500 text-white hover:bg-blue-600"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+            title={isScreenSharing ? "Stop sharing" : "Share screen"}
+          >
+            <IoDesktop size={24} />
+          </button>
 
           {/* More Options */}
           <button
