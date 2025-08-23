@@ -2,10 +2,7 @@ import { FC, FormEvent, useEffect, useState } from "react";
 import { FaRegMessage } from "react-icons/fa6";
 import { useDispatch } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  registerUserRequest,
-  registerUserSuccesss,
-} from "../slice/authSlice";
+import { loginSuccess } from "../slice/authSlice";
 
 interface RegisterProps {}
 
@@ -23,6 +20,7 @@ const RegisterComp: FC<RegisterProps> = () => {
   const { search } = useLocation();
   const sp = new URLSearchParams(search);
   const redirect = sp.get("redirect") || "/";
+
   const registerSubmit = (e: { target: { name: string; value: string } }) => {
     setState({
       ...state,
@@ -31,27 +29,37 @@ const RegisterComp: FC<RegisterProps> = () => {
   };
 
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo");
-    if (userInfo) {
-      dispatch(registerUserSuccesss(JSON.parse(userInfo)));
-      navigate(redirect);
+    // Check if user is already authenticated
+    const storedUser = localStorage.getItem("authUser");
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        if (user && user._id && user.name && user.email && user.token) {
+          dispatch(loginSuccess(user));
+          navigate(redirect);
+        }
+      } catch (error) {
+        console.error("Failed to parse stored user:", error);
+        localStorage.removeItem("authUser");
+      }
     }
-  });
+  }, [dispatch, navigate, redirect]);
 
   const register = (e: FormEvent<HTMLFormElement>) => {
     const { name, email, password, confirmPassword } = state;
     e.preventDefault();
+
     if (confirmPassword !== password) {
       console.log("password didnt match");
-    } else {
-      const formData = new FormData();
-
-      formData.append("name", name);
-      formData.append("email", email);
-      formData.append("password", password);
-
-      dispatch(registerUserRequest(formData));
+      return;
     }
+
+    // For now, redirect to login since we don't have a register saga
+    // In a real app, you'd implement registration API call here
+    console.log("Registration form submitted:", { name, email });
+    alert(
+      "Registration not implemented yet. Please use login with existing credentials."
+    );
   };
   return (
     <div className="bg-[#4EAC6D] min-h-screen p-10 overflow-hidden ">

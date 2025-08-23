@@ -2,7 +2,7 @@ import { FC, FormEvent, useEffect, useState } from "react";
 import { FaRegMessage } from "react-icons/fa6";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { loginUserRequest } from "../slice/authSlice";
+import { loginStart } from "../slice/authSlice";
 import { RootState } from "../store/index";
 
 interface LoginProps {}
@@ -16,7 +16,7 @@ const LoginComp: FC<LoginProps> = () => {
   const { search } = useLocation();
   const sp = new URLSearchParams(search);
   const redirect = sp.get("redirect") || "/";
-  const { authenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const submitInput = (e: { target: { name: string; value: string } }) => {
     setState({
@@ -26,18 +26,24 @@ const LoginComp: FC<LoginProps> = () => {
   };
 
   useEffect(() => {
-    if (authenticated) {
+    if (isAuthenticated) {
       navigate(redirect);
     }
-  }, [authenticated, navigate, redirect]);
+  }, [isAuthenticated, navigate, redirect]);
 
   const loginHandler = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const res = {
+
+    // Prepare login data
+    const loginData = {
       email: state.email,
       password: state.password,
     };
-    dispatch(loginUserRequest(res));
+
+    console.log("Dispatching login with data:", loginData);
+
+    dispatch(loginStart(loginData));
+
   };
   return (
     <div className="bg-[#4EAC6D] min-h-screen p-10 overflow-hidden ">

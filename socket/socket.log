@@ -1,0 +1,902 @@
+nohup: ignoring input
+🚀 Socket.IO server starting on port 8000
+✅ Socket connected: sC9qFUwF_SgBSZg9AAAB
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: sC9qFUwF_SgBSZg9AAAB
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: sC9qFUwF_SgBSZg9AAAB
+✅ Existing user socket ID updated
+📊 Active users: 1
+✅ Socket connected: 4n1dUmWGXzkcWrwzAAAD
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: sC9qFUwF_SgBSZg9AAAB
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: sC9qFUwF_SgBSZg9AAAB
+✅ Existing user socket ID updated
+📊 Active users: 1
+✅ Socket connected: 6sO9Y31Dpw7-VT3nAAAF
+✅ Socket connected: 2QKf6jCu7diuebKrAAAH
+✅ Socket connected: GlzZ69-idGzBgt0SAAAJ
+✅ Socket connected: PvVwfrlkscAKj-oPAAAL
+✅ Socket connected: d7CjiNdUmn0JkDKNAAAN
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 1
+✅ Socket connected: oRjcq2g45R3MJeizAAAP
+✅ Socket connected: _-3-L_J6LvSfjR_PAAAR
+✅ Socket connected: ExUnEntj_nAlxG9HAAAT
+✅ Socket connected: aCz-SeAsZvEgAdsVAAAV
+✅ Socket connected: FmQhoB89ADhfgFdqAAAX
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ New user added to active users
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ Existing user socket ID updated
+📊 Active users: 2
+✅ Socket connected: BIybZW0PJLT94VFaAAAZ
+✅ Socket connected: 5KUAuTmHG12SgE5mAAAb
+✅ Socket connected: hbPpVoFeCdqvHAu2AAAd
+✅ Socket connected: 8ZYOHO0lR_yTl1oGAAAf
+✅ Socket connected: CePaPgtctMfRTWumAAAh
+✅ Socket connected: -ghWMqa-lLjFvBGeAAAj
+✅ Socket connected: 0WvoF714jkj9jKVkAAAl
+✅ Socket connected: V4WwH85kold1-oVZAAAn
+✅ Socket connected: SX0KVv4IGSbV4t6wAAAp
+✅ Socket connected: piI3GSSNItj7k5MTAAAr
+✅ Socket connected: jdCfsMjuDn-ZfEn_AAAt
+✅ Socket connected: rD-DBzKx9xzMu5NQAAAv
+✅ Socket connected: RoOtKUA5VTVXll1AAAAx
+✅ Socket connected: wSAIN2TS_RpkcQYzAAAz
+✅ Socket connected: vVj-8GUtwpIUjHeWAAA1
+✅ Socket connected: MLiMjPWUN2O9MMrKAAA3
+✅ Socket connected: zdZNXkiIHqJ24koMAAA5
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 2
+✅ Socket connected: 7aKxkb4QHRZ-NW6KAAA7
+✅ Socket connected: K_AJHzH-ELiew0O6AAA9
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6sO9Y31Dpw7-VT3nAAAF
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ExUnEntj_nAlxG9HAAAT
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: 6sO9Y31Dpw7-VT3nAAAF
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: ExUnEntj_nAlxG9HAAAT
+📊 Active users after disconnect: 0
+✅ Socket connected: qy2GUXL1Co0GzbRDAAA_
+✅ Socket connected: ouA2vLpvLdZRvGrQAABB
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ New user added to active users
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a7502c0404228915918c75'
+}
+✅ Incoming call sent to: 68a1804e5af4ab9885c110c0
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+🎯 SOCKET SERVER: Forwarding offer to receiver: {
+  receiverSocketId: 'ouA2vLpvLdZRvGrQAABB',
+  senderId: '68a17fad5af4ab9885c110b8'
+}
+✅ SOCKET SERVER: Offer forwarded successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: ouA2vLpvLdZRvGrQAABB
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'qy2GUXL1Co0GzbRDAAA_'
+  },
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'ouA2vLpvLdZRvGrQAABB'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: ouA2vLpvLdZRvGrQAABB
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'qy2GUXL1Co0GzbRDAAA_'
+  },
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'ouA2vLpvLdZRvGrQAABB'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+🔚 Call ended: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔚 Call ended: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: ouA2vLpvLdZRvGrQAABB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: aCz-SeAsZvEgAdsVAAAV
+📊 Active users after disconnect: 2
+🔌 Socket disconnected: oRjcq2g45R3MJeizAAAP
+📊 Active users after disconnect: 2
+🔌 Socket disconnected: _-3-L_J6LvSfjR_PAAAR
+📊 Active users after disconnect: 2
+🔌 Socket disconnected: FmQhoB89ADhfgFdqAAAX
+📊 Active users after disconnect: 2
+🔌 Socket disconnected: ouA2vLpvLdZRvGrQAABB
+📊 Active users after disconnect: 1
+✅ Socket connected: hlc6LELzPRhnqcLOAABD
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: hlc6LELzPRhnqcLOAABD
+✅ New user added to active users
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: hlc6LELzPRhnqcLOAABD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: hlc6LELzPRhnqcLOAABD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qy2GUXL1Co0GzbRDAAA_
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: hlc6LELzPRhnqcLOAABD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: qy2GUXL1Co0GzbRDAAA_
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: hlc6LELzPRhnqcLOAABD
+📊 Active users after disconnect: 0
+✅ Socket connected: _us5uXMv5t3-3lkoAABF
+✅ Socket connected: 8Zop88oT_HYdGtzdAABH
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: _us5uXMv5t3-3lkoAABF
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: 8Zop88oT_HYdGtzdAABH
+✅ New user added to active users
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: _us5uXMv5t3-3lkoAABF
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: 8Zop88oT_HYdGtzdAABH
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: _us5uXMv5t3-3lkoAABF
+📊 Active users after disconnect: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: 8Zop88oT_HYdGtzdAABH
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔌 Socket disconnected: 8Zop88oT_HYdGtzdAABH
+📊 Active users after disconnect: 0
+✅ Socket connected: lVDEBh_quizjDL_hAABJ
+✅ Socket connected: Oa0MxMhSyzmCcar5AABL
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: lVDEBh_quizjDL_hAABJ
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: Oa0MxMhSyzmCcar5AABL
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: Oa0MxMhSyzmCcar5AABL
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: lVDEBh_quizjDL_hAABJ
+📊 Active users after disconnect: 0
+✅ Socket connected: 6yNfPmYLQQIMd-i3AABN
+✅ Socket connected: Ln8GmTN-Vs5srdIRAABP
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: 6yNfPmYLQQIMd-i3AABN
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: Ln8GmTN-Vs5srdIRAABP
+✅ New user added to active users
+📊 Active users: 2
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a751270404228915918c89'
+}
+✅ Incoming call sent to: 68a1804e5af4ab9885c110c0
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+🎯 SOCKET SERVER: Forwarding offer to receiver: {
+  receiverSocketId: '6yNfPmYLQQIMd-i3AABN',
+  senderId: '68a17fad5af4ab9885c110b8'
+}
+✅ SOCKET SERVER: Offer forwarded successfully
+🔌 Socket disconnected: Ln8GmTN-Vs5srdIRAABP
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 6yNfPmYLQQIMd-i3AABN
+📊 Active users after disconnect: 0
+✅ Socket connected: qu-78UCXsV9DIvWMAABR
+✅ Socket connected: SJmlTWVedNYfFLDEAABT
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: qu-78UCXsV9DIvWMAABR
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: SJmlTWVedNYfFLDEAABT
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: SJmlTWVedNYfFLDEAABT
+📊 Active users after disconnect: 1
+✅ Socket connected: OtgLEwe5jAwloAvlAABV
+🔌 Socket disconnected: sC9qFUwF_SgBSZg9AAAB
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 2QKf6jCu7diuebKrAAAH
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 4n1dUmWGXzkcWrwzAAAD
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: GlzZ69-idGzBgt0SAAAJ
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: PvVwfrlkscAKj-oPAAAL
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: d7CjiNdUmn0JkDKNAAAN
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: BIybZW0PJLT94VFaAAAZ
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 5KUAuTmHG12SgE5mAAAb
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: hbPpVoFeCdqvHAu2AAAd
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 8ZYOHO0lR_yTl1oGAAAf
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: CePaPgtctMfRTWumAAAh
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: -ghWMqa-lLjFvBGeAAAj
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 0WvoF714jkj9jKVkAAAl
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: V4WwH85kold1-oVZAAAn
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: SX0KVv4IGSbV4t6wAAAp
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: piI3GSSNItj7k5MTAAAr
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: jdCfsMjuDn-ZfEn_AAAt
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: rD-DBzKx9xzMu5NQAAAv
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: RoOtKUA5VTVXll1AAAAx
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: wSAIN2TS_RpkcQYzAAAz
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: vVj-8GUtwpIUjHeWAAA1
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: MLiMjPWUN2O9MMrKAAA3
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: zdZNXkiIHqJ24koMAAA5
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 7aKxkb4QHRZ-NW6KAAA7
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: K_AJHzH-ELiew0O6AAA9
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: qu-78UCXsV9DIvWMAABR
+📊 Active users after disconnect: 0
+✅ Socket connected: 3OSJKzNZN5XkR395AABX
+🔌 Socket disconnected: 3OSJKzNZN5XkR395AABX
+📊 Active users after disconnect: 0
+✅ Socket connected: k5onYQ2brK72k4tEAABZ
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: OtgLEwe5jAwloAvlAABV
+✅ New user added to active users
+📊 Active users: 1
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a751660404228915918c9c'
+}
+✅ Incoming call sent to: 68a1804e5af4ab9885c110c0
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+🎯 SOCKET SERVER: Forwarding offer to receiver: { receiverSocketId: 'OtgLEwe5jAwloAvlAABV', senderId: null }
+✅ SOCKET SERVER: Offer forwarded successfully
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: k5onYQ2brK72k4tEAABZ
+✅ New user added to active users
+📊 Active users: 2
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: OtgLEwe5jAwloAvlAABV
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'OtgLEwe5jAwloAvlAABV'
+  },
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'k5onYQ2brK72k4tEAABZ'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: OtgLEwe5jAwloAvlAABV
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'OtgLEwe5jAwloAvlAABV'
+  },
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'k5onYQ2brK72k4tEAABZ'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+🔚 Call ended: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔚 Call ended: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: OtgLEwe5jAwloAvlAABV
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: k5onYQ2brK72k4tEAABZ
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: OtgLEwe5jAwloAvlAABV
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: k5onYQ2brK72k4tEAABZ
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: OtgLEwe5jAwloAvlAABV
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: k5onYQ2brK72k4tEAABZ
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: OtgLEwe5jAwloAvlAABV
+📊 Active users after disconnect: 0
+✅ Socket connected: Y2W9-4sQAyabuFzjAABb
+✅ Socket connected: sBIp_41gq7htpGyRAABd
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: Y2W9-4sQAyabuFzjAABb
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: sBIp_41gq7htpGyRAABd
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: sBIp_41gq7htpGyRAABd
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: Y2W9-4sQAyabuFzjAABb
+📊 Active users after disconnect: 0
+✅ Socket connected: LNVGS3JMmhmJgmBSAABf
+✅ Socket connected: y1Bkn3zgJrPK4g5RAABh
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: LNVGS3JMmhmJgmBSAABf
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: y1Bkn3zgJrPK4g5RAABh
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: y1Bkn3zgJrPK4g5RAABh
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: LNVGS3JMmhmJgmBSAABf
+📊 Active users after disconnect: 0
+✅ Socket connected: ZHoFY9z8oU2QcAbAAABj
+✅ Socket connected: it2Ax2nYi8wysfU3AABl
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: ZHoFY9z8oU2QcAbAAABj
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: it2Ax2nYi8wysfU3AABl
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: ZHoFY9z8oU2QcAbAAABj
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: it2Ax2nYi8wysfU3AABl
+📊 Active users after disconnect: 0
+✅ Socket connected: pumVQ7N4cvntYAaqAABn
+✅ Socket connected: LPONEzv6cATu5aLKAABp
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: pumVQ7N4cvntYAaqAABn
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: LPONEzv6cATu5aLKAABp
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: pumVQ7N4cvntYAaqAABn
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: LPONEzv6cATu5aLKAABp
+📊 Active users after disconnect: 0
+✅ Socket connected: 6Ujg5_NXIp8s4VWyAABr
+✅ Socket connected: UB5iL9T219IH6U5nAABt
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 6Ujg5_NXIp8s4VWyAABr
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: UB5iL9T219IH6U5nAABt
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: 6Ujg5_NXIp8s4VWyAABr
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: UB5iL9T219IH6U5nAABt
+📊 Active users after disconnect: 0
+✅ Socket connected: 4Q38sF55B_vYE2JQAABv
+✅ Socket connected: THGxy7MYhDiMTYbMAABx
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 4Q38sF55B_vYE2JQAABv
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: THGxy7MYhDiMTYbMAABx
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: THGxy7MYhDiMTYbMAABx
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 4Q38sF55B_vYE2JQAABv
+📊 Active users after disconnect: 0
+✅ Socket connected: iptjduZLZIwhGjFiAABz
+✅ Socket connected: 2BOlhxAnFe3xHmKjAAB1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: iptjduZLZIwhGjFiAABz
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 2BOlhxAnFe3xHmKjAAB1
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: iptjduZLZIwhGjFiAABz
+📊 Active users after disconnect: 1
+🔌 Socket disconnected: 2BOlhxAnFe3xHmKjAAB1
+📊 Active users after disconnect: 0
+✅ Socket connected: 1vmyS4EOcBTwrlWJAAB3
+✅ Socket connected: qlmkT7b-bfeEF0FnAAB5
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: qlmkT7b-bfeEF0FnAAB5
+✅ New user added to active users
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 1vmyS4EOcBTwrlWJAAB3
+✅ New user added to active users
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: 1vmyS4EOcBTwrlWJAAB3
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: qlmkT7b-bfeEF0FnAAB5
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: 1vmyS4EOcBTwrlWJAAB3
+📊 Active users after disconnect: 1
+✅ Socket connected: VFlYWHf5V_d8h3j-AAB7
+🔌 Socket disconnected: qlmkT7b-bfeEF0FnAAB5
+📊 Active users after disconnect: 0
+✅ Socket connected: g_bKaJrjWROyG3_XAAB9
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a752a80404228915918cb0'
+}
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+❌ SOCKET SERVER: Receiver not found for offer: 68a1804e5af4ab9885c110c0
+❌ SOCKET SERVER: Available users: []
+🔌 Socket disconnected: VFlYWHf5V_d8h3j-AAB7
+📊 Active users after disconnect: 0
+✅ Socket connected: E_3p9j36lAhtQOlKAAB_
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ New user added to active users
+📊 Active users: 1
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a752c20404228915918cbb'
+}
+✅ Incoming call sent to: 68a1804e5af4ab9885c110c0
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+🎯 SOCKET SERVER: Forwarding offer to receiver: { receiverSocketId: 'g_bKaJrjWROyG3_XAAB9', senderId: null }
+✅ SOCKET SERVER: Offer forwarded successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: g_bKaJrjWROyG3_XAAB9
+📞 Active users: 1
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'g_bKaJrjWROyG3_XAAB9'
+  }
+]
+📞 Caller found: NO undefined
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+❌ Caller not found: 68a17fad5af4ab9885c110b8
+❌ Available users: [ '68a1804e5af4ab9885c110c0' ]
+❌ Cannot accept call - users not found in active users
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: g_bKaJrjWROyG3_XAAB9
+📞 Active users: 1
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'g_bKaJrjWROyG3_XAAB9'
+  }
+]
+📞 Caller found: NO undefined
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+❌ Caller not found: 68a17fad5af4ab9885c110b8
+❌ Available users: [ '68a1804e5af4ab9885c110c0' ]
+❌ Cannot accept call - users not found in active users
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: E_3p9j36lAhtQOlKAAB_
+✅ New user added to active users
+📊 Active users: 2
+🔌 Socket disconnected: E_3p9j36lAhtQOlKAAB_
+📊 Active users after disconnect: 1
+✅ Socket connected: taaCULDM_WI8c7vnAACB
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 1
+📨 Message received: {
+  senderId: '68a17fad5af4ab9885c110b8',
+  senderName: 'Mamush Meshesha',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  message: 'hi'
+}
+📤 Sending message to: 68a1804e5af4ab9885c110c0
+📨 Message received: {
+  senderId: '68a1804e5af4ab9885c110c0',
+  senderName: 'test',
+  receiverId: '68a17fad5af4ab9885c110b8',
+  message: 'hi there'
+}
+❌ Receiver not found: 68a17fad5af4ab9885c110b8
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: taaCULDM_WI8c7vnAACB
+✅ New user added to active users
+📊 Active users: 2
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a752f90404228915918ccc'
+}
+✅ Incoming call sent to: 68a1804e5af4ab9885c110c0
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+🎯 SOCKET SERVER: Forwarding offer to receiver: {
+  receiverSocketId: 'g_bKaJrjWROyG3_XAAB9',
+  senderId: '68a17fad5af4ab9885c110b8'
+}
+✅ SOCKET SERVER: Offer forwarded successfully
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: g_bKaJrjWROyG3_XAAB9
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'g_bKaJrjWROyG3_XAAB9'
+  },
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'taaCULDM_WI8c7vnAACB'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: g_bKaJrjWROyG3_XAAB9
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'g_bKaJrjWROyG3_XAAB9'
+  },
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'taaCULDM_WI8c7vnAACB'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+❌ Call declined: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+❌ Call declined: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔚 Call ended: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: taaCULDM_WI8c7vnAACB
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔌 Socket disconnected: taaCULDM_WI8c7vnAACB
+📊 Active users after disconnect: 1
+✅ Socket connected: UCUMQqWiD_yV7_5dAACD
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 1
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ New user added to active users
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+📞 Call initiated: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio',
+  callId: '68a753ed0404228915918cd7'
+}
+✅ Incoming call sent to: 68a1804e5af4ab9885c110c0
+🎯 SOCKET SERVER: Received offer: {
+  receiverId: '68a1804e5af4ab9885c110c0',
+  hasOffer: true,
+  offerType: 'offer'
+}
+🎯 SOCKET SERVER: Forwarding offer to receiver: {
+  receiverSocketId: 'g_bKaJrjWROyG3_XAAB9',
+  senderId: '68a17fad5af4ab9885c110b8'
+}
+✅ SOCKET SERVER: Offer forwarded successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: g_bKaJrjWROyG3_XAAB9
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'g_bKaJrjWROyG3_XAAB9'
+  },
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'UCUMQqWiD_yV7_5dAACD'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+📞 ACCEPT CALL RECEIVED: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+📞 Socket ID: g_bKaJrjWROyG3_XAAB9
+📞 Active users: 2
+📞 Active users details: [
+  {
+    userId: '68a1804e5af4ab9885c110c0',
+    socketId: 'g_bKaJrjWROyG3_XAAB9'
+  },
+  {
+    userId: '68a17fad5af4ab9885c110b8',
+    socketId: 'UCUMQqWiD_yV7_5dAACD'
+  }
+]
+📞 Caller found: YES 68a17fad5af4ab9885c110b8
+📞 Receiver found: YES 68a1804e5af4ab9885c110c0
+📞 Call data found: YES
+✅ Call status updated to active
+✅ Call accepted and connected successfully
+❌ Call declined: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+❌ Call declined: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔚 Call ended: {
+  callerId: '68a17fad5af4ab9885c110b8',
+  receiverId: '68a1804e5af4ab9885c110c0',
+  callType: 'audio'
+}
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a17fad5af4ab9885c110b8 Socket: UCUMQqWiD_yV7_5dAACD
+✅ Existing user socket ID updated
+📊 Active users: 2
+🔄 Adding user: 68a1804e5af4ab9885c110c0 Socket: g_bKaJrjWROyG3_XAAB9
+✅ Existing user socket ID updated
+📊 Active users: 2

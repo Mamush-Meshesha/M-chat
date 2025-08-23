@@ -7,13 +7,20 @@ const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
-  if (user && (await user.matchPassword(password))) {
-    generateToken(res, user.id);
+  if (!user) {
+    res.status(401);
+    throw new Error("user not found");
+  }
 
+  const matchPassword = await user.matchPassword(password);
+
+  if (matchPassword) {
+    const token = generateToken(res, user.id);
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      token: token,
     });
   } else {
     res.status(401);
@@ -72,8 +79,6 @@ const getAllUsers = asyncHandler(async (req, res) => {
     throw new Error("There is no friends");
   }
 });
-
-
 
 //  get user profile
 

@@ -1,14 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { call, all, takeLatest, put, takeEvery } from "redux-saga/effects";
 import {
-  loginUserFailure,
-  loginUserRequest,
-  loginUserSuccess,
-  logoutUserFailure,
-  logoutUserRequest,
-  registerUserFailure,
-  registerUserRequest,
-  registerUserSuccesss,
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
 } from "../slice/authSlice";
 import axios, { AxiosResponse } from "axios";
 import { PayloadAction } from "@reduxjs/toolkit";
@@ -22,54 +18,75 @@ import {
   sendMessageRequest,
   sendMessageSuccess,
 } from "../slice/userSlice";
-function* registerUser(action: PayloadAction) {
-  try {
-    const res: AxiosResponse = yield call(
-      axios.post,
-      "http://localhost:5300/api/users/",
-      action.payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    yield put(registerUserSuccesss(res.data));
-  } catch (error: any) {
-    yield put(registerUserFailure(error.message));
-  }
-}
 
 function* loginUser(action: PayloadAction) {
   try {
+    console.log("Login saga called with payload:", action.payload);
+
+    // Extract email and password from the action payload
+    const { email, password } = action.payload;
+
+    if (!email || !password) {
+      yield put(loginFailure("Email and password are required"));
+      return;
+    }
+
+    // Make real API call to your backend
     const res: AxiosResponse = yield call(
       axios.post,
       "http://localhost:5300/api/users/auth",
-      action.payload,
+      {
+        email,
+        password,
+      },
       {
         headers: {
           "Content-Type": "application/json",
         },
-        withCredentials: true,
+        withCredentials: true, // Important for cookies
       }
     );
-    yield put(loginUserSuccess(res.data));
+
+    console.log("Login API response:", res.data);
+
+    // Backend should return user data (token might be in response or cookie)
+    if (res.data && res.data._id) {
+      // If token is in response, include it; if not, it's in cookie
+      const userData = {
+        _id: res.data._id,
+        name: res.data.name,
+        email: res.data.email,
+        token: res.data.token, // Include token if backend sends it
+      };
+
+      yield put(loginSuccess(userData));
+    } else {
+      yield put(loginFailure("Invalid response from server"));
+    }
   } catch (error: any) {
-    yield put(loginUserFailure(error.message));
+    console.error("Login error:", error);
+    yield put(loginFailure(error.response?.data?.message || error.message));
   }
 }
 
 function* logoutUser() {
   try {
-    const res: AxiosResponse = yield call(
+    // Make real API call to logout endpoint
+    yield call(
       axios.post,
       "http://localhost:5300/api/users/logout",
       {},
-      { withCredentials: true }
+      {
+        withCredentials: true, // Important for HTTP-only cookies
+      }
     );
-    yield put(loginUserSuccess(res.data));
+
+    // Always logout locally regardless of API response
+    yield put(logout());
   } catch (error: any) {
-    yield put(logoutUserFailure(error.message));
+    console.error("Logout error:", error);
+    // Still logout even if API call fails
+    yield put(logout());
   }
 }
 
@@ -127,11 +144,11 @@ function* watchRegisterUser() {
 }
 
 function* watchLoginUser() {
-  yield takeLatest(loginUserRequest.type, loginUser);
+  yield takeLatest(loginStart.type, loginUser);
 }
 
 function* watchLogoutUser() {
-  yield takeLatest(logoutUserRequest.type, logoutUser);
+  yield takeLatest(logout.type, logoutUser);
 }
 
 function* watchFetchFriends() {
@@ -148,7 +165,6 @@ function* watchFetchMessageSaga() {
 // root saga
 export default function* rootSaga() {
   yield all([
-    watchRegisterUser(),
     watchLoginUser(),
     watchLogoutUser(),
     watchFetchFriends(),

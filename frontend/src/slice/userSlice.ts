@@ -13,17 +13,35 @@ interface Send {
   reciverId: string;
   senderName: string;
 }
+
+interface Message {
+  _id: string;
+  senderId: string;
+  senderName: string;
+  resiverId: string;
+  message: {
+    text: string;
+  };
+  createdAt: string;
+}
+
+interface UnreadCount {
+  [userId: string]: number;
+}
+
 export interface userState {
   user: User | null;
   currentUser: null;
   newMessage: string;
-  conversation: Send[]
-  recConversation: Send[]
-  activeUser: Send[]
+  conversation: Send[];
+  recConversation: Message[];
+  activeUser: Send[];
   error: string;
   loading: boolean;
+  typingUsers: string[];
+  unreadCounts: UnreadCount;
+  notifications: Message[];
 }
-
 
 const initialState: userState = {
   user: null,
@@ -34,6 +52,9 @@ const initialState: userState = {
   activeUser: [],
   error: "",
   loading: false,
+  typingUsers: [],
+  unreadCounts: {},
+  notifications: [],
 };
 
 export const userSlice = createSlice({
@@ -58,7 +79,7 @@ export const userSlice = createSlice({
     sendMessageSuccess: (state, action: PayloadAction<Send[]>) => {
       state.loading = false;
       state.conversation = action.payload;
-      state.newMessage =""
+      state.newMessage = "";
     },
     sendMessageFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
@@ -68,13 +89,75 @@ export const userSlice = createSlice({
     fetchMessageRequest: (state) => {
       state.loading = true;
     },
-    fetchMessageSuccess: (state, action: PayloadAction<Send[]>) => {
+    fetchMessageSuccess: (state, action: PayloadAction<Message[]>) => {
       state.recConversation = action.payload;
       state.loading = false;
     },
     fetchMessageFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
+    },
+
+    // Real-time message handling
+    addMessage: (state, action: PayloadAction<Message>) => {
+      state.recConversation.push(action.payload);
+    },
+
+    // Unread message handling
+    addUnreadMessage: (
+      state,
+      action: PayloadAction<{ senderId: string; message: Message }>
+    ) => {
+      const { senderId, message } = action.payload;
+
+      // Only add unread count if not from current user and not in current chat
+      if (senderId !== state.currentUser?._id) {
+        if (state.unreadCounts[senderId]) {
+          state.unreadCounts[senderId] += 1;
+        } else {
+          state.unreadCounts[senderId] = 1;
+        }
+
+        // Add to notifications
+        state.notifications.unshift(message);
+
+        // Keep only last 10 notifications
+        if (state.notifications.length > 10) {
+          state.notifications = state.notifications.slice(0, 10);
+        }
+      }
+    },
+
+    // Mark messages as read
+    markMessagesAsRead: (state, action: PayloadAction<string>) => {
+      const userId = action.payload;
+      if (state.unreadCounts[userId]) {
+        state.unreadCounts[userId] = 0;
+      }
+
+      // Remove notifications from this user
+      state.notifications = state.notifications.filter(
+        (notification) => notification.senderId !== userId
+      );
+    },
+
+    // Clear all notifications
+    clearNotifications: (state) => {
+      state.notifications = [];
+      state.unreadCounts = {};
+    },
+
+    // Typing indicators
+    setTypingUser: (state, action: PayloadAction<string>) => {
+      if (!state.typingUsers.includes(action.payload)) {
+        state.typingUsers.push(action.payload);
+      }
+    },
+
+    removeTypingUser: (state, action: PayloadAction<string>) => {
+      state.typingUsers = state.typingUsers.filter(
+        (id) => id !== action.payload
+      );
     },
 
     // local state
@@ -84,9 +167,9 @@ export const userSlice = createSlice({
     setNewMessage: (state, action: PayloadAction<string>) => {
       state.newMessage = action.payload;
     },
-    setActiveUser: (state,action) =>{
-      state.activeUser = action.payload
-    }
+    setActiveUser: (state, action) => {
+      state.activeUser = action.payload;
+    },
   },
 });
 
@@ -102,7 +185,13 @@ export const {
   fetchMessageFailure,
   fetchMessageRequest,
   fetchMessageSuccess,
-  setActiveUser
+  setActiveUser,
+  addMessage,
+  addUnreadMessage,
+  markMessagesAsRead,
+  clearNotifications,
+  setTypingUser,
+  removeTypingUser,
 } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -8,11 +8,14 @@ const generateToken = (res, userId) => {
   //set jwt as http-only cookie
 
   res.cookie("jwt", token, {
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV !== "production",
     sameSite: "strict",
     maxAge: 3600 * 24 * 60 * 60,
   });
+
+  console.log("token", token);
+  return token;
 };
 
 export default generateToken;

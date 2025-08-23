@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRoute from "./routes/userRoutes.js";
+import callRoute from "./routes/callRoutes.js";
+import groupRoute from "./routes/groupRoutes.js";
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 
 dotenv.config();
@@ -24,6 +26,8 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/users", userRoute);
+app.use("/api/calls", callRoute);
+app.use("/api/groups", groupRoute);
 
 app.use(notFound);
 app.use(errorHandler);

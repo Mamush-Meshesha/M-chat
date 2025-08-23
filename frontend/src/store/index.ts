@@ -9,13 +9,25 @@ const persistConfig = {
   key: "root",
   storage,
   whitelist: ["auth"], // Only persist the auth slice
+  // Ensure auth state is properly serialized
+  serialize: true,
+  // Handle any non-serializable values
+  transforms: [],
 };
+
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 const sagaMiddleware = createSagaMiddleware();
+
 const store = configureStore({
   reducer: persistedReducer,
-  middleware: (getDefaulMiddleware) =>
-    getDefaulMiddleware({ serializableCheck: false }).concat(sagaMiddleware),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredPaths: ["auth.auUser"],
+      },
+    }).concat(sagaMiddleware),
+  devTools: process.env.NODE_ENV !== "production",
 });
 
 export const persistor = persistStore(store);

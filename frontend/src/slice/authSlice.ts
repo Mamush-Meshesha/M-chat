@@ -1,88 +1,120 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface User {
+  _id: string;
   name: string;
   email: string;
-  password: string;
+  token?: string; // Add token back since backend doesn't use HTTP-only
 }
 
-interface auUser {
-  email: string;
-  password: string;
-  name: string
-}
-export interface AuthStateProps {
-  user: User[];
-  auUser: auUser[];
-  authenticated: boolean;
-  error: string;
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
   isLoading: boolean;
+  error: string | null;
 }
 
-const initialState: AuthStateProps = {
-  user: [],
-  auUser: [],
-  authenticated: false,
-  error: "",
+const initialState: AuthState = {
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
+  error: null,
 };
 
-export const AuthSlice = createSlice({
+export const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    registerUserRequest: (state) => {
+    // Login actions
+    loginStart: (
+      state,
+      action: PayloadAction<{ email: string; password: string }>
+    ) => {
       state.isLoading = true;
+      state.error = null;
+      // Don't set user or isAuthenticated here - wait for success
     },
-    registerUserSuccesss: (state, action) => {
+    loginSuccess: (state, action: PayloadAction<User>) => {
       state.isLoading = false;
+      state.isAuthenticated = true;
       state.user = action.payload;
-      localStorage.setItem("authenticate", JSON.stringify(true));
-      localStorage.setItem("userInfo", JSON.stringify(action.payload));
+      state.error = null;
+      localStorage.setItem("authUser", JSON.stringify(action.payload));
     },
-    registerUserFailure: (state, action) => {
+    loginFailure: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
+      state.isAuthenticated = false;
+      state.user = null;
       state.error = action.payload;
-      state.authenticated = false;
+      localStorage.removeItem("authUser");
     },
 
-    loginUserRequest: (state) => {
-      state.isLoading = true;
-    },
-    loginUserSuccess: (state, action) => {
+    logout: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
       state.isLoading = false;
-      state.auUser = action.payload;
-      state.authenticated = true;
+      state.error = null;
+
+      localStorage.removeItem("authUser");
     },
-    loginUserFailure: (state, action) => {
+
+    restoreAuth: (state) => {
+      try {
+        const storedUser = localStorage.getItem("authUser");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          // Validate user data including token
+          if (user && user._id && user.name && user.email && user.token) {
+            state.user = user;
+            state.isAuthenticated = true;
+            console.log("✅ Auth restored from localStorage:", user.name);
+            console.log("✅ Token exists:", user.token ? "yes" : "no");
+          } else {
+            console.log(
+              "❌ Invalid user data or missing token in localStorage, clearing..."
+            );
+            console.log("❌ User data:", {
+              hasId: !!user?._id,
+              hasName: !!user?.name,
+              hasEmail: !!user?.email,
+              hasToken: !!user?.token,
+            });
+            localStorage.removeItem("authUser");
+            state.user = null;
+            state.isAuthenticated = false;
+          }
+        } else {
+          console.log("ℹ️ No stored auth data found");
+          state.user = null;
+          state.isAuthenticated = false;
+        }
+      } catch (error) {
+        console.error("❌ Error restoring auth:", error);
+        localStorage.removeItem("authUser");
+        state.user = null;
+        state.isAuthenticated = false;
+      }
+    },
+
+    // Clear all auth data (for debugging)
+    clearAuth: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
       state.isLoading = false;
-      state.error = action.payload;
-      state.authenticated = false;
-    },
-    logoutUserRequest: (state) => {
-      state.isLoading = true;
-    },
-    logoutUseSuccess: (state) => {
-      state.auUser = [];
-      state.isLoading = false;
-      state.authenticated = false;
-    },
-    logoutUserFailure: (state, action) => {
-      state.isLoading = false;
-      state.error = action.payload;
+      state.error = null;
+      localStorage.removeItem("authUser");
+      console.log("🧹 All auth data cleared");
     },
   },
 });
 
 export const {
-  registerUserFailure,
-  registerUserRequest,
-  registerUserSuccesss,
-  loginUserFailure,
-  loginUserRequest,
-  loginUserSuccess,
-  logoutUseSuccess,
-  logoutUserRequest,
-  logoutUserFailure,
-} = AuthSlice.actions;
-export default AuthSlice.reducer;
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
+  restoreAuth,
+  clearAuth,
+} = authSlice.actions;
+
+export default authSlice.reducer;
