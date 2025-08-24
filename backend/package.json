@@ -23,6 +23,6 @@
     "mongoose": "^8.5.1",
     "nodemon": "^3.1.4",
     "validator": "^13.12.0",
-    "build": "npm install && npm install -g nodemon"
+    "build": "this is build"
   }
 }
