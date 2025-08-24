@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Test</title>
+</head>
+<body>
+    <h1>Audio File Test</h1>
+    
+    <h2>Test Calling Sound</h2>
+    <audio id="callingSound" controls>
+        <source src="/sounds/phone-calling-153844.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <button onclick="testCallingSound()">Test Calling Sound</button>
+    
+    <h2>Test Ringing Sound</h2>
+    <audio id="ringingSound" controls>
+        <source src="/sounds/reciever-ringing.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <button onclick="testRingingSound()">Test Ringing Sound</button>
+    
+    <h2>Console Logs</h2>
+    <div id="logs" style="background: #f0f0f0; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace;"></div>
+
+    <script>
+        function log(message) {
+            console.log(message);
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML += message + '<br>';
+        }
+
+        function testCallingSound() {
+            const audio = document.getElementById('callingSound');
+            log('🔊 Testing calling sound...');
+            log('Audio src: ' + audio.src);
+            log('Audio readyState: ' + audio.readyState);
+            log('Audio networkState: ' + audio.networkState);
+            
+            audio.play().then(() => {
+                log('✅ Calling sound started successfully');
+            }).catch(error => {
+                log('❌ Error playing calling sound: ' + error.message);
+            });
+        }
+
+        function testRingingSound() {
+            const audio = document.getElementById('ringingSound');
+            log('🔊 Testing ringing sound...');
+            log('Audio src: ' + audio.src);
+            log('Audio readyState: ' + audio.readyState);
+            log('Audio networkState: ' + audio.networkState);
+            
+            audio.play().then(() => {
+                log('✅ Ringing sound started successfully');
+            }).catch(error => {
+                log('❌ Error playing ringing sound: ' + error.message);
+            });
+        }
+
+        // Test audio loading
+        window.addEventListener('load', () => {
+            log('🚀 Page loaded, testing audio elements...');
+            
+            const callingAudio = document.getElementById('callingSound');
+            const ringingAudio = document.getElementById('ringingSound');
+            
+            callingAudio.addEventListener('canplaythrough', () => {
+                log('✅ Calling sound loaded successfully');
+            });
+            
+            callingAudio.addEventListener('error', (e) => {
+                log('❌ Error loading calling sound: ' + e);
+                log('Error details: ' + callingAudio.error);
+            });
+            
+            ringingAudio.addEventListener('canplaythrough', () => {
+                log('✅ Ringing sound loaded successfully');
+            });
+            
+            ringingAudio.addEventListener('error', (e) => {
+                log('❌ Error loading ringing sound: ' + e);
+                log('Error details: ' + ringingAudio.error);
+            });
+        });
+    </script>
+</body>
+</html>

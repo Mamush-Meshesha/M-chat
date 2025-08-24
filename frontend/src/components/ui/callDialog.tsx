@@ -37,6 +37,7 @@ const CallDialog: FC<CallDialogProps> = ({
   onAccept,
   onDecline,
   onEndCall,
+  onCancel, // Add this missing prop
   callData,
   onCallEnded,
 }) => {
@@ -554,77 +555,164 @@ const CallDialog: FC<CallDialogProps> = ({
     if (onAccept) onAccept();
   };
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     console.log("🔄 CallDialog: Declining call...");
 
-    // First emit decline call event to socket server
-    if (callingService.getSocket()) {
-      callingService.getSocket()?.emit("declineCall", {
-        callerId: callData?.callerId,
-        receiverId: callData?.receiverId,
-        callType: callData?.callType,
-      });
-      console.log("✅ Decline call event emitted to socket server");
-    }
+    try {
+      // First emit decline call event to socket server
+      if (callingService.getSocket()) {
+        callingService.getSocket()?.emit("declineCall", {
+          callerId: callData?.callerId,
+          receiverId: callData?.receiverId,
+          callType: callData?.callType,
+        });
+        console.log("✅ Decline call event emitted to socket server");
+      }
 
-    callingService.stopRingtone();
-    if (onDecline) onDecline();
-    onClose();
+      // Stop the ringtone
+      callingService.stopRingtone();
+
+      // Clean up any existing streams
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+        setLocalStream(null);
+      }
+
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+        setRemoteStream(null);
+      }
+
+      // Call the onDecline callback if provided
+      if (onDecline) {
+        console.log("🔄 Calling onDecline callback...");
+        onDecline();
+      }
+
+      console.log("✅ Call declined successfully, closing dialog...");
+      onClose();
+    } catch (error) {
+      console.error("❌ Error declining call:", error);
+      // Still close the dialog even if there's an error
+      onClose();
+    }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     console.log("🔄 CallDialog: Cancelling call...");
     console.log("Current state:", { isIncoming, isCallActive, isConnecting });
 
-    // First emit cancel call event to socket server
-    if (callingService.getSocket()) {
-      callingService.getSocket()?.emit("cancelCall", {
-        callerId: callData?.callerId,
-        receiverId: callData?.receiverId,
-        callType: callData?.callType,
-      });
-      console.log("✅ Cancel call event emitted to socket server");
+    try {
+      // First emit cancel call event to socket server
+      if (callingService.getSocket()) {
+        callingService.getSocket()?.emit("cancelCall", {
+          callerId: callData?.callerId,
+          receiverId: callData?.receiverId,
+          callType: callData?.callType,
+        });
+        console.log("✅ Cancel call event emitted to socket server");
+      }
+
+      // Stop the calling sound
+      callingService.stopCallRingtone();
+
+      // Clean up call state
+      if (isCallActive) {
+        setIsCallActive(false);
+        setCallDuration(0);
+      }
+
+      // Clean up streams
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+        setLocalStream(null);
+      }
+
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+        setRemoteStream(null);
+      }
+
+      // Reset screen sharing
+      if (isScreenSharing) {
+        callingService.stopScreenShare();
+        setIsScreenSharing(false);
+      }
+
+      // Call the onCancel callback if provided
+      if (onCancel) {
+        console.log("🔄 Calling onCancel callback...");
+        onCancel();
+      } else {
+        console.log("❌ onCancel callback not available");
+      }
+
+      // End the call in the calling service
+      callingService.endCall();
+
+      console.log("✅ Call cancelled successfully, closing dialog...");
+
+      // Close the dialog after everything is cleaned up
+      onClose();
+    } catch (error) {
+      console.error("❌ Error cancelling call:", error);
+      // Still close the dialog even if there's an error
+      onClose();
     }
-
-    callingService.stopCallRingtone();
-
-    if (onCancel) {
-      console.log("🔄 Calling onCancel callback...");
-      onCancel();
-    } else {
-      console.log("❌ onCancel callback not available");
-    }
-
-    console.log("🔄 Closing dialog...");
-    onClose();
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     console.log("🔄 CallDialog: Ending call...");
 
-    // First emit end call event to socket server
-    if (callingService.getSocket()) {
-      callingService.getSocket()?.emit("endCall", {
-        callerId: callData?.callerId,
-        receiverId: callData?.receiverId,
-        callType: callData?.callType,
-      });
-      console.log("✅ End call event emitted to socket server");
+    try {
+      // First emit end call event to socket server
+      if (callingService.getSocket()) {
+        callingService.getSocket()?.emit("endCall", {
+          callerId: callData?.callerId,
+          receiverId: callData?.receiverId,
+          callType: callData?.callType,
+        });
+        console.log("✅ End call event emitted to socket server");
+      }
+
+      // End the call in the calling service
+      callingService.endCall();
+
+      // Clean up local state
+      setIsCallActive(false);
+      setCallDuration(0);
+
+      // Clean up streams
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+        setLocalStream(null);
+      }
+
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+        setRemoteStream(null);
+      }
+
+      // Reset screen sharing
+      if (isScreenSharing) {
+        callingService.stopScreenShare();
+        setIsScreenSharing(false);
+      }
+
+      // Call the callback to refresh call history
+      if (onCallEnded) {
+        onCallEnded();
+      }
+
+      if (onEndCall) onEndCall();
+
+      console.log("✅ Call ended successfully, closing dialog...");
+      onClose();
+    } catch (error) {
+      console.error("❌ Error ending call:", error);
+      // Still close the dialog even if there's an error
+      onClose();
     }
-
-    callingService.endCall();
-    setIsCallActive(false);
-    setCallDuration(0);
-    setLocalStream(null);
-    setRemoteStream(null);
-
-    // Call the callback to refresh call history
-    if (onCallEnded) {
-      onCallEnded();
-    }
-
-    if (onEndCall) onEndCall();
-    onClose();
   };
 
   // Toggle mute

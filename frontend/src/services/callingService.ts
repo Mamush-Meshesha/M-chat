@@ -25,10 +25,12 @@ class CallingService {
   private localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
   private peerConnection: RTCPeerConnection | null = null;
-  private ringtone: HTMLAudioElement | null = null;
-  private callRingtone: HTMLAudioElement | null = null;
-  private customRingtone: any = null; // Custom phone ringtone
   private callStartTime: number | null = null;
+
+  // Sound management for different call scenarios
+  private callingSound: HTMLAudioElement | null = null;
+  private ringingSound: HTMLAudioElement | null = null;
+  private currentPlayingSound: HTMLAudioElement | null = null;
   private pendingOffer: any = null; // Queue for offers received before peer connection is ready
   private sentIceCandidates: Set<string> = new Set(); // Track sent ICE candidates to prevent duplicates
   private trackMonitorInterval: NodeJS.Timeout | null = null;
@@ -38,7 +40,17 @@ class CallingService {
   private isScreenSharing = false;
 
   constructor() {
-    this.initializeRingtone();
+    console.log("🚀 CallingService constructor called");
+    console.log("🚀 Audio will be initialized lazily when needed");
+    console.log("🚀 Constructor completed");
+  }
+
+  // Initialize audio lazily when first needed
+  private ensureAudioInitialized() {
+    if (!this.callingSound || !this.ringingSound) {
+      console.log("🔊 Audio not initialized, initializing now...");
+      this.initializeRingtone();
+    }
   }
 
   // Create a call record in the backend
@@ -120,72 +132,137 @@ class CallingService {
   }
 
   private initializeRingtone() {
-    // Create custom phone ringtone using Web Audio API
-    this.createPhoneRingtone();
-
-    // Fallback to MP3 for browsers that don't support Web Audio API
-    this.ringtone = new Audio("/notification.mp3");
-    this.ringtone.loop = true;
-    this.callRingtone = new Audio("/notification.mp3");
-    this.callRingtone.loop = true;
+    console.log("🔊 initializeRingtone called");
+    // Initialize call sounds
+    this.initializeCallSounds();
+    console.log("🔊 initializeRingtone completed");
   }
 
-  private createPhoneRingtone() {
+  private initializeCallSounds() {
     try {
-      // Create audio context for custom ringtone
-      const audioContext = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      console.log("🔊 Initializing call sounds...");
 
-      // Create oscillator for the ringtone
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      // Connect oscillator to gain node
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Set initial frequency and type for phone-like sound
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.type = "sine";
-
-      // Create the classic "duuud, duuuud" phone ringtone pattern
-      const ringPattern = () => {
-        const now = audioContext.currentTime;
-
-        // First "duuud" (800 Hz) - longer tone
-        oscillator.frequency.setValueAtTime(800, now);
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(0.2, now + 0.05); // Quick fade in
-        gainNode.gain.setValueAtTime(0.2, now + 0.25); // Hold
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.35); // Fade out
-
-        // Second "duuuud" (1000 Hz) - shorter tone
-        oscillator.frequency.setValueAtTime(1000, now + 0.4);
-        gainNode.gain.setValueAtTime(0, now + 0.4);
-        gainNode.gain.linearRampToValueAtTime(0.2, now + 0.45); // Quick fade in
-        gainNode.gain.setValueAtTime(0.2, now + 0.55); // Hold
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.65); // Fade out
-
-        // Pause between rings
-        gainNode.gain.setValueAtTime(0, now + 0.65);
-      };
-
-      // Store the ringtone function for later use
-      this.customRingtone = {
-        audioContext,
-        oscillator,
-        gainNode,
-        ringPattern,
-        interval: null,
-      };
-
-      console.log("✅ Custom phone ringtone created successfully");
-    } catch (error) {
-      console.warn(
-        "⚠️ Could not create custom ringtone, falling back to MP3:",
-        error
+      // Initialize calling sound (for outgoing calls)
+      this.callingSound = new Audio("/sounds/phone-calling-153844.mp3");
+      console.log("🔊 Calling sound Audio object created:", this.callingSound);
+      console.log("🔊 Calling sound src:", this.callingSound.src);
+      console.log("🔊 Calling sound readyState:", this.callingSound.readyState);
+      console.log(
+        "🔊 Calling sound networkState:",
+        this.callingSound.networkState
       );
-      this.customRingtone = null;
+      console.log(
+        "🔊 Calling sound assigned to this.callingSound:",
+        this.callingSound === this.callingSound
+      );
+
+      this.callingSound.loop = true;
+      this.callingSound.volume = 0.7;
+
+      // Test if the audio can load
+      this.callingSound.addEventListener("canplaythrough", () => {
+        console.log("✅ Calling sound loaded successfully");
+        console.log(
+          "✅ Calling sound readyState after load:",
+          this.callingSound?.readyState
+        );
+      });
+
+      this.callingSound.addEventListener("error", (e) => {
+        console.error("❌ Error loading calling sound:", e);
+        console.error("❌ Error details:", this.callingSound?.error);
+        console.error("❌ Error code:", this.callingSound?.error?.code);
+        console.error("❌ Error message:", this.callingSound?.error?.message);
+      });
+
+      // Add loadstart event
+      this.callingSound.addEventListener("loadstart", () => {
+        console.log("🔄 Calling sound load started");
+      });
+
+      // Add progress event
+      this.callingSound.addEventListener("progress", () => {
+        console.log("🔄 Calling sound loading progress");
+      });
+
+      console.log("✅ Calling sound initialized");
+
+      // Initialize ringing sound (for incoming calls)
+      this.ringingSound = new Audio("/sounds/reciever-ringing.mp3");
+      console.log("🔊 Ringing sound Audio object created:", this.ringingSound);
+      console.log("🔊 Ringing sound src:", this.ringingSound.src);
+      console.log("🔊 Ringing sound readyState:", this.ringingSound.readyState);
+      console.log(
+        "🔊 Ringing sound networkState:",
+        this.ringingSound.networkState
+      );
+      console.log(
+        "🔊 Ringing sound assigned to this.ringingSound:",
+        this.ringingSound === this.ringingSound
+      );
+
+      this.ringingSound.loop = true;
+      this.ringingSound.volume = 0.7;
+
+      // Test if the audio can load
+      this.ringingSound.addEventListener("canplaythrough", () => {
+        console.log("✅ Ringing sound loaded successfully");
+        console.log(
+          "✅ Ringing sound readyState after load:",
+          this.ringingSound?.readyState
+        );
+      });
+
+      this.ringingSound.addEventListener("error", (e) => {
+        console.error("❌ Error loading ringing sound:", e);
+        console.error("❌ Error details:", this.ringingSound?.error);
+        console.error("❌ Error code:", this.ringingSound?.error?.code);
+        console.error("❌ Error message:", this.ringingSound?.error?.message);
+      });
+
+      // Add loadstart event
+      this.ringingSound.addEventListener("loadstart", () => {
+        console.log("🔄 Ringing sound load started");
+      });
+
+      // Add progress event
+      this.ringingSound.addEventListener("progress", () => {
+        console.log("🔄 Ringing sound loading progress");
+      });
+
+      console.log("✅ Ringing sound initialized");
+
+      console.log("🔊 Sound files loaded:", {
+        calling: this.callingSound.src,
+        ringing: this.ringingSound.src,
+      });
+
+      // Verify objects are not null
+      console.log("🔊 Final verification:", {
+        callingSoundExists: !!this.callingSound,
+        ringingSoundExists: !!this.ringingSound,
+        callingSoundType: typeof this.callingSound,
+        ringingSoundType: typeof this.ringingSound,
+      });
+
+      // Force load the audio files
+      console.log("🔄 Attempting to force load audio files...");
+      this.callingSound.load();
+      this.ringingSound.load();
+      console.log("🔄 Audio files load() method called");
+
+      // Final verification after load
+      console.log("🔊 Final state after load:", {
+        callingSoundExists: !!this.callingSound,
+        ringingSoundExists: !!this.ringingSound,
+        callingSoundType: typeof this.callingSound,
+        ringingSoundType: typeof this.ringingSound,
+        callingSoundReadyState: this.callingSound?.readyState,
+        ringingSoundReadyState: this.ringingSound?.readyState,
+      });
+    } catch (error) {
+      console.error("❌ CRITICAL ERROR in initializeCallSounds:", error);
+      console.error("❌ Error stack:", error.stack);
     }
   }
 
@@ -233,13 +310,15 @@ class CallingService {
 
   // Ensure socket connection
   private async ensureSocket(): Promise<Socket> {
-    if (!this.socket) {
+    if (!this.socket || !this.socket.connected) {
       console.log("🔄 Getting socket from socket manager...");
       this.socket = socketManager.getSocket();
 
-      if (!this.socket) {
-        console.log("🔄 No socket available, creating new one...");
-        await socketManager.createSocket();
+      if (!this.socket || !this.socket.connected) {
+        console.log(
+          "🔄 No socket available or not connected, creating new one..."
+        );
+        socketManager.connect();
         this.socket = socketManager.getSocket();
       }
 
@@ -1274,6 +1353,13 @@ class CallingService {
             hasRemoteStream: !!this.screenShareStream,
             remoteTrackCount: this.screenShareStream?.getTracks().length || 0,
           },
+          socketStatus: {
+            hasSocket: !!this.socket,
+            isConnected: this.socket?.connected || false,
+            socketId: this.socket?.id || null,
+            connectionState: this.socket?.connectionState || "unknown",
+            socketManagerStatus: socketManager.getSocketStatus(),
+          },
           eventCounts: this.eventCounts,
           currentUserId: this.getCurrentUserId(),
         });
@@ -1527,69 +1613,98 @@ class CallingService {
   }
 
   startRingtone() {
-    // Try custom ringtone first, fallback to MP3
-    if (this.customRingtone) {
-      try {
-        this.customRingtone.oscillator.start();
-        // Start the ringtone pattern immediately
-        this.customRingtone.ringPattern();
-        // Then repeat every 1.2 seconds (slightly longer than the pattern)
-        this.customRingtone.interval = setInterval(() => {
-          this.customRingtone.ringPattern();
-        }, 1200);
-        console.log("🔔 Custom phone ringtone started (duuud, duuuud)");
-      } catch (error) {
-        console.warn("⚠️ Custom ringtone failed, falling back to MP3:", error);
-        this.startMP3Ringtone();
-      }
+    console.log("🔔 Starting ringtone for incoming call...");
+
+    // Ensure audio is initialized
+    this.ensureAudioInitialized();
+
+    console.log("🔔 Ringing sound object:", this.ringingSound);
+    console.log("🔔 Ringing sound readyState:", this.ringingSound?.readyState);
+
+    // Stop any currently playing sound
+    this.stopAllSounds();
+
+    // Use ringing sound for incoming calls
+    if (this.ringingSound) {
+      this.currentPlayingSound = this.ringingSound;
+      console.log("🔔 Attempting to play ringing sound...");
+      this.ringingSound
+        .play()
+        .then(() => {
+          console.log("✅ Ringing sound started successfully");
+        })
+        .catch((error) => {
+          console.error("❌ Error playing ringing sound:", error);
+        });
     } else {
-      this.startMP3Ringtone();
+      console.error("❌ No ringing sound available!");
+    }
+  }
+
+  // Start calling sound for outgoing calls
+  startCallingSound() {
+    console.log("🔔 Starting calling sound for outgoing call...");
+
+    // Ensure audio is initialized
+    this.ensureAudioInitialized();
+
+    console.log("🔔 Calling sound object:", this.callingSound);
+    console.log("🔔 Calling sound readyState:", this.callingSound?.readyState);
+
+    // Stop any currently playing sound
+    this.stopAllSounds();
+
+    // Use calling sound for outgoing calls
+    if (this.callingSound) {
+      this.currentPlayingSound = this.callingSound;
+      console.log("🔔 Attempting to play calling sound...");
+      this.callingSound
+        .play()
+        .then(() => {
+          console.log("✅ Calling sound started successfully");
+        })
+        .catch((error) => {
+          console.error("❌ Error playing calling sound:", error);
+        });
+    } else {
+      console.error("❌ No calling sound available!");
     }
   }
 
   stopRingtone() {
-    // Stop custom ringtone
-    if (this.customRingtone && this.customRingtone.interval) {
-      clearInterval(this.customRingtone.interval);
-      this.customRingtone.interval = null;
-      try {
-        this.customRingtone.oscillator.stop();
-        this.customRingtone.oscillator =
-          this.customRingtone.audioContext.createOscillator();
-        this.customRingtone.oscillator.connect(this.customRingtone.gainNode);
-        this.customRingtone.oscillator.frequency.setValueAtTime(
-          800,
-          this.customRingtone.audioContext.currentTime
-        );
-        this.customRingtone.oscillator.type = "sine";
-        console.log("🔇 Custom ringtone stopped");
-      } catch (error) {
-        console.warn("⚠️ Error stopping custom ringtone:", error);
-      }
+    // Stop all sounds
+    this.stopAllSounds();
+  }
+
+  // Stop all sounds (calling and ringing)
+  stopAllSounds() {
+    console.log("🔇 Stopping all sounds...");
+
+    // Stop calling sound
+    if (this.callingSound) {
+      this.callingSound.pause();
+      this.callingSound.currentTime = 0;
     }
 
-    // Stop MP3 ringtone
-    if (this.ringtone) {
-      this.ringtone.pause();
-      this.ringtone.currentTime = 0;
+    // Stop ringing sound
+    if (this.ringingSound) {
+      this.ringingSound.pause();
+      this.ringingSound.currentTime = 0;
     }
+
+    // Reset current playing sound
+    this.currentPlayingSound = null;
+    console.log("🔇 All sounds stopped");
   }
 
   startCallRingtone() {
-    // Use the same custom ringtone for outgoing calls
-    this.startRingtone();
+    // Use calling sound for outgoing calls
+    this.startCallingSound();
   }
 
   stopCallRingtone() {
-    // Stop the ringtone
-    this.stopRingtone();
-  }
-
-  private startMP3Ringtone() {
-    if (this.ringtone) {
-      this.ringtone.play().catch(console.error);
-      console.log("🔔 MP3 ringtone started");
-    }
+    // Stop all sounds
+    this.stopAllSounds();
   }
 
   // Get current call state
@@ -1622,16 +1737,6 @@ class CallingService {
     return !!this.socket;
   }
 
-  // Test the ringtone (for debugging)
-  testRingtone() {
-    console.log("🧪 Testing ringtone...");
-    this.startRingtone();
-    setTimeout(() => {
-      this.stopRingtone();
-      console.log("🧪 Ringtone test completed");
-    }, 3000); // Test for 3 seconds
-  }
-
   // Test socket connection (for debugging)
   testSocketConnection() {
     console.log("🧪 Testing socket connection...");
@@ -1648,15 +1753,170 @@ class CallingService {
     }
   }
 
+  // Test the sound system (for debugging)
+  testSounds() {
+    console.log("🧪 Testing sound system...");
+
+    // Ensure audio is initialized
+    this.ensureAudioInitialized();
+
+    console.log("🔊 Current sound objects:", {
+      callingSound: this.callingSound,
+      ringingSound: this.ringingSound,
+      currentPlayingSound: this.currentPlayingSound,
+    });
+
+    // Test calling sound
+    if (this.callingSound) {
+      console.log("🧪 Testing calling sound...");
+      console.log("🧪 Calling sound readyState:", this.callingSound.readyState);
+      console.log(
+        "🧪 Calling sound networkState:",
+        this.callingSound.networkState
+      );
+      console.log("🧪 Calling sound src:", this.callingSound.src);
+
+      this.startCallingSound();
+      setTimeout(() => {
+        this.stopAllSounds();
+        console.log("🧪 Calling sound test completed");
+      }, 3000);
+    } else {
+      console.log("❌ No calling sound available for testing");
+    }
+
+    // Test ringing sound
+    if (this.ringingSound) {
+      console.log("🧪 Testing ringing sound...");
+      console.log("🧪 Ringing sound readyState:", this.ringingSound.readyState);
+      console.log(
+        "🧪 Ringing sound networkState:",
+        this.ringingSound.networkState
+      );
+      console.log("🧪 Ringing sound src:", this.ringingSound.src);
+
+      this.startRingtone(); // Changed from startRingingSound() to startRingtone()
+      setTimeout(() => {
+        this.stopAllSounds();
+        console.log("🧪 Ringing sound test completed");
+      }, 3000);
+    } else {
+      console.log("❌ No ringing sound available for testing");
+    }
+  }
+
+  // Comprehensive audio diagnostic test
+  diagnoseAudioIssues() {
+    console.log("🔍 === AUDIO DIAGNOSTIC TEST ===");
+
+    // Ensure audio is initialized
+    this.ensureAudioInitialized();
+
+    // Test 1: Check if audio files are accessible
+    console.log("🔍 Test 1: Checking audio file accessibility...");
+    fetch("/sounds/phone-calling-153844.mp3")
+      .then((response) => {
+        console.log(
+          "✅ Calling sound file accessible:",
+          response.status,
+          response.statusText
+        );
+        console.log("✅ Content-Type:", response.headers.get("content-type"));
+        console.log(
+          "✅ Content-Length:",
+          response.headers.get("content-length")
+        );
+      })
+      .catch((error) => {
+        console.error("❌ Calling sound file not accessible:", error);
+      });
+
+    fetch("/sounds/reciever-ringing.mp3")
+      .then((response) => {
+        console.log(
+          "✅ Ringing sound file accessible:",
+          response.status,
+          response.statusText
+        );
+        console.log("✅ Content-Type:", response.headers.get("content-type"));
+        console.log(
+          "✅ Content-Length:",
+          response.headers.get("content-length")
+        );
+      })
+      .catch((error) => {
+        console.error("❌ Ringing sound file not accessible:", error);
+      });
+
+    // Test 2: Check audio object states
+    console.log("🔍 Test 2: Checking audio object states...");
+    if (this.callingSound) {
+      console.log("🔍 Calling sound object:", {
+        readyState: this.callingSound.readyState,
+        networkState: this.callingSound.networkState,
+        src: this.callingSound.src,
+        currentTime: this.callingSound.currentTime,
+        duration: this.callingSound.duration,
+        paused: this.callingSound.paused,
+        ended: this.callingSound.ended,
+        error: this.callingSound.error,
+      });
+    }
+
+    if (this.ringingSound) {
+      console.log("🔍 Ringing sound object:", {
+        readyState: this.ringingSound.readyState,
+        networkState: this.ringingSound.networkState,
+        src: this.ringingSound.src,
+        currentTime: this.ringingSound.currentTime,
+        duration: this.ringingSound.duration,
+        paused: this.ringingSound.paused,
+        ended: this.ringingSound.ended,
+        error: this.ringingSound.error,
+      });
+    }
+
+    // Test 3: Try to create new audio objects
+    console.log("🔍 Test 3: Creating new audio objects...");
+    try {
+      const testCallingSound = new Audio("/sounds/phone-calling-153844.mp3");
+      const testRingingSound = new Audio("/sounds/reciever-ringing.mp3");
+
+      console.log("🔍 New calling sound created:", testCallingSound);
+      console.log("🔍 New ringing sound created:", testRingingSound);
+
+      // Test loading
+      testCallingSound.addEventListener("canplaythrough", () => {
+        console.log("✅ New calling sound loaded successfully");
+      });
+
+      testRingingSound.addEventListener("canplaythrough", () => {
+        console.log("✅ New ringing sound loaded successfully");
+      });
+
+      testCallingSound.addEventListener("error", (e) => {
+        console.error("❌ New calling sound error:", e);
+      });
+
+      testRingingSound.addEventListener("error", (e) => {
+        console.error("❌ New ringing sound error:", e);
+      });
+
+      // Force load
+      testCallingSound.load();
+      testRingingSound.load();
+    } catch (error) {
+      console.error("❌ Error creating test audio objects:", error);
+    }
+
+    console.log("🔍 === AUDIO DIAGNOSTIC TEST COMPLETED ===");
+  }
+
   // Set ringtone volume (0.0 to 1.0)
   setRingtoneVolume(volume: number) {
-    if (this.customRingtone && this.customRingtone.gainNode) {
-      this.customRingtone.gainNode.gain.setValueAtTime(
-        volume,
-        this.customRingtone.audioContext.currentTime
-      );
-      console.log(`🔊 Ringtone volume set to: ${volume}`);
-    }
+    // This method is no longer used as custom ringtone is removed.
+    // Keeping it for now, but it will not have an effect.
+    console.log(`🔊 Ringtone volume set to: ${volume}`);
   }
 
   // Get current user ID from localStorage
@@ -1820,32 +2080,34 @@ class CallingService {
 
   // Clean up custom ringtone resources
   private cleanupCustomRingtone() {
-    if (this.customRingtone) {
-      try {
-        if (this.customRingtone.interval) {
-          clearInterval(this.customRingtone.interval);
-          this.customRingtone.interval = null;
-        }
-        if (this.customRingtone.oscillator) {
-          this.customRingtone.oscillator.stop();
-        }
-        if (this.customRingtone.audioContext) {
-          this.customRingtone.audioContext.close();
-        }
-        this.customRingtone = null;
-        console.log("✅ Custom ringtone resources cleaned up");
-      } catch (error) {
-        console.warn("⚠️ Error cleaning up custom ringtone:", error);
-      }
+    // This method is no longer needed as custom ringtone is removed.
+    // Keeping it for now, but it will not have an effect.
+    console.log("✅ Custom ringtone resources cleaned up");
+  }
+
+  // Clean up all sound resources
+  private cleanupAllSounds() {
+    // Clean up MP3 sounds
+    if (this.callingSound) {
+      this.callingSound.pause();
+      this.callingSound.currentTime = 0;
+      this.callingSound = null;
     }
+
+    if (this.ringingSound) {
+      this.ringingSound.pause();
+      this.ringingSound.currentTime = 0;
+      this.ringingSound = null;
+    }
+
+    this.currentPlayingSound = null;
+    console.log("✅ All sound resources cleaned up");
   }
 
   // Cleanup method to be called when component unmounts
   cleanup() {
     this.cleanupCall();
-    this.stopRingtone();
-    this.stopCallRingtone();
-    this.cleanupCustomRingtone();
+    this.cleanupAllSounds();
     this.socket = null;
   }
 
@@ -1978,6 +2240,62 @@ class CallingService {
       // You can implement a proper event system here if needed
       console.log(`📡 Screen share event: ${event}`, data);
     }
+  }
+
+  // Manually reload audio files
+  reloadAudioFiles() {
+    console.log("🔄 Manually reloading audio files...");
+
+    try {
+      // Dispose of old audio objects
+      if (this.callingSound) {
+        this.callingSound.pause();
+        this.callingSound.src = "";
+        this.callingSound = null;
+      }
+
+      if (this.ringingSound) {
+        this.ringingSound.pause();
+        this.ringingSound.src = "";
+        this.ringingSound = null;
+      }
+
+      // Reinitialize
+      this.initializeCallSounds();
+      console.log("✅ Audio files reloaded");
+
+      // Verify initialization
+      console.log("🔊 Audio objects after reload:", {
+        callingSound: !!this.callingSound,
+        ringingSound: !!this.ringingSound,
+      });
+    } catch (error) {
+      console.error("❌ Error reloading audio files:", error);
+    }
+  }
+
+  // Check audio file status
+  getAudioStatus() {
+    // Ensure audio is initialized
+    this.ensureAudioInitialized();
+
+    return {
+      callingSound: {
+        exists: !!this.callingSound,
+        readyState: this.callingSound?.readyState || "N/A",
+        networkState: this.callingSound?.networkState || "N/A",
+        src: this.callingSound?.src || "N/A",
+        error: this.callingSound?.error || null,
+      },
+      ringingSound: {
+        exists: !!this.ringingSound,
+        readyState: this.ringingSound?.readyState || "N/A",
+        networkState: this.ringingSound?.networkState || "N/A",
+        src: this.ringingSound?.src || "N/A",
+        error: this.ringingSound?.error || null,
+      },
+      currentPlayingSound: this.currentPlayingSound ? "Playing" : "None",
+    };
   }
 }
 
