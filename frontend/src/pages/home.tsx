@@ -58,6 +58,7 @@ const Home: FC<HomeProps> = () => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState("chat"); // Mobile navigation state
   const socket = useRef<Socket | null>(null);
 
   // Initialize socket connection
@@ -468,9 +469,9 @@ const Home: FC<HomeProps> = () => {
           />
         </div>
 
-        {/* Chat Messages Area - Scrollable with responsive padding */}
+        {/* Desktop Chat Content - Hidden on mobile */}
         <div
-          className="flex-1 overflow-y-auto bg-cover bg-center bg-no-repeat"
+          className="hidden lg:block flex-1 overflow-y-auto bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url("./back.png")`,
           }}
@@ -587,8 +588,306 @@ const Home: FC<HomeProps> = () => {
           </div>
         </div>
 
+        {/* Mobile Navigation Content */}
+        <div className="lg:hidden flex-1 overflow-y-auto">
+          {mobileTab === "chat" && currentUserChat ? (
+            // Mobile Chat View
+            <div
+              className="flex-1 overflow-y-auto bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url("./back.png")`,
+              }}
+            >
+              <div className="px-3 sm:px-4 py-20 pb-32">
+                {recConversation && recConversation.length > 0 ? (
+                  recConversation.map((con, index) =>
+                    con.senderId === authUser?._id ? (
+                      <div
+                        ref={
+                          index === recConversation.length - 1
+                            ? scrollRef
+                            : null
+                        }
+                        key={con._id}
+                        className="mb-4 sm:mb-6 animate-slideInRight"
+                      >
+                        {/* My message */}
+                        <div className="flex justify-end">
+                          <div className="flex flex-col items-end max-w-xs sm:max-w-sm">
+                            <div className="bg-[#CCE2D3] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
+                              <p className="text-gray-800 break-words text-sm sm:text-base">
+                                {con.message.text}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-gray-500">
+                              <FaCheck className="text-green-500" />
+                              <span>{formatTime(con.createdAt)}</span>
+                              <span className="font-medium">You</span>
+                              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-300 rounded-full overflow-hidden">
+                                <img
+                                  src="/profile.jpg"
+                                  alt="profile"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        ref={
+                          index === recConversation.length - 1
+                            ? scrollRef
+                            : null
+                        }
+                        key={con._id}
+                        className="mb-4 sm:mb-6 animate-slideInLeft"
+                      >
+                        {/* Other person's message */}
+                        <div className="flex justify-start">
+                          <div className="flex flex-col max-w-xs sm:max-w-sm">
+                            <div className="bg-white rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
+                              <p className="text-gray-800 break-words text-sm sm:text-base">
+                                {con.message.text}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-gray-500">
+                              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-300 rounded-full overflow-hidden">
+                                <img
+                                  src="/profile.jpg"
+                                  alt="profile"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <span className="font-medium">
+                                {currentUserChat.name}
+                              </span>
+                              <span>{formatTime(con.createdAt)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )
+                ) : (
+                  <div className="text-center text-gray-500 mt-8">
+                    <p className="text-sm sm:text-base">
+                      No messages yet. Start the conversation!
+                    </p>
+                  </div>
+                )}
+
+                {/* Typing indicator */}
+                {typingUsers.length > 0 && (
+                  <div className="flex justify-start mb-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : mobileTab === "chat" ? (
+            // Mobile Chat List View
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Recent Chats
+              </h2>
+              <div className="space-y-3">
+                {/* Chat list will be populated here */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <p className="text-gray-600 text-center">
+                    Chat list will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : mobileTab === "contacts" ? (
+            // Mobile Contacts View
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Contacts
+              </h2>
+              <div className="space-y-3">
+                {/* Contacts will be populated here */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <p className="text-gray-600 text-center">
+                    Contacts will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : mobileTab === "people" ? (
+            // Mobile People View
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Active People
+              </h2>
+              <div className="space-y-3">
+                {/* Active people will be populated here */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <p className="text-gray-600 text-center">
+                    Active people will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : mobileTab === "calls" ? (
+            // Mobile Calls View
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Call History
+              </h2>
+              <div className="space-y-3">
+                {/* Call history will be populated here */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <p className="text-gray-600 text-center">
+                    Call history will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : mobileTab === "groups" ? (
+            // Mobile Groups View
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Groups
+              </h2>
+              <div className="space-y-3">
+                {/* Groups will be populated here */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <p className="text-gray-600 text-center">
+                    Groups will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : mobileTab === "settings" ? (
+            // Mobile Settings View
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Settings
+              </h2>
+              <div className="space-y-3">
+                {/* Settings will be populated here */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <p className="text-gray-600 text-center">
+                    Settings will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="flex justify-around items-center py-2">
+            {[
+              {
+                id: "chat",
+                label: "Chats",
+                icon: "💬",
+                color: "text-blue-500",
+                bgColor: "bg-blue-50",
+              },
+              {
+                id: "contacts",
+                label: "Contacts",
+                icon: "👥",
+                color: "text-green-500",
+                bgColor: "bg-green-50",
+              },
+              {
+                id: "people",
+                label: "People",
+                icon: "👤",
+                color: "text-purple-500",
+                bgColor: "bg-purple-50",
+              },
+              {
+                id: "calls",
+                label: "Calls",
+                icon: "📞",
+                color: "text-red-500",
+                bgColor: "bg-red-50",
+              },
+              {
+                id: "groups",
+                label: "Groups",
+                icon: "👥",
+                color: "text-orange-500",
+                bgColor: "bg-orange-50",
+              },
+              {
+                id: "settings",
+                label: "Settings",
+                icon: "⚙️",
+                color: "text-gray-500",
+                bgColor: "bg-gray-50",
+              },
+            ].map((item) => {
+              const isActive = mobileTab === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setMobileTab(item.id)}
+                  className={`flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? `${item.bgColor} ${item.color}`
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <span className="text-xl mb-1">{item.icon}</span>
+                  <span
+                    className={`text-xs font-medium ${
+                      isActive ? item.color : "text-gray-500"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile Chat Input - Shows when in chat view */}
+        {mobileTab === "chat" && currentUserChat && (
+          <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3">
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Fixed Footer - Responsive positioning */}
-        <div className="sticky bottom-0 z-20 bg-white border-t">
+        <div className="hidden lg:block sticky bottom-0 z-20 bg-white border-t">
           <Dashboardbottom scrollRef={scrollRef} socket={socket.current} />
         </div>
       </div>
