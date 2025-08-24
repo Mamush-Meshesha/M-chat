@@ -33,6 +33,7 @@ class CallingService {
   private ringingSound: HTMLAudioElement | null = null;
   private currentPlayingSound: HTMLAudioElement | null = null;
   private pendingOffer: any = null; // Queue for offers received before peer connection is ready
+  private pendingAnswer: any = null;
   private sentIceCandidates: Set<string> = new Set(); // Track sent ICE candidates to prevent duplicates
   private trackMonitorInterval: number | null = null;
   private eventCounts = { callAccepted: 0, callConnected: 0 };
@@ -581,6 +582,17 @@ class CallingService {
         answerType: data.answer?.type,
         answerSdp: data.answer?.sdp?.substring(0, 100) + "...",
       });
+
+      // Check if we're ready to handle the answer
+      if (
+        !this.peerConnection ||
+        this.peerConnection.signalingState !== "have-local-offer"
+      ) {
+        console.log("⏳ Not ready for answer, queuing it...");
+        this.pendingAnswer = data;
+        return;
+      }
+
       await this.handleAnswer(data);
     });
 
@@ -1519,6 +1531,31 @@ class CallingService {
         signalingState: this.peerConnection.signalingState,
       });
 
+      // Check if we're in the correct state to receive an answer
+      if (this.peerConnection.signalingState !== "have-local-offer") {
+        console.error(
+          `❌ Wrong signaling state for answer: ${this.peerConnection.signalingState}`
+        );
+        console.error(
+          "❌ Expected: have-local-offer, Got:",
+          this.peerConnection.signalingState
+        );
+
+        // If we're in stable state, we might need to recreate the connection
+        if (this.peerConnection.signalingState === "stable") {
+          console.log(
+            "🔄 Connection is in stable state, recreating peer connection..."
+          );
+          await this.recreatePeerConnection();
+          return;
+        }
+
+        // For other states, wait a bit and try again
+        console.log("⏳ Waiting for correct signaling state...");
+        setTimeout(() => this.handleAnswer(data), 1000);
+        return;
+      }
+
       // Set the remote description (answer from receiver)
       console.log("🔄 Setting remote description (answer)...");
 
@@ -1576,6 +1613,15 @@ class CallingService {
     } catch (error: any) {
       console.error("❌ Error handling answer:", error);
       console.error("❌ Error details:", error.message, error.stack);
+
+      // If it's a state error, try to recover
+      if (
+        error.message.includes("wrong state") ||
+        error.message.includes("stable")
+      ) {
+        console.log("🔄 Attempting to recover from state error...");
+        await this.recreatePeerConnection();
+      }
     }
   }
 
@@ -1969,6 +2015,11 @@ class CallingService {
       console.log("🔍 Connection quality monitoring stopped");
     }
 
+    // Clear pending offers and answers
+    this.pendingOffer = null;
+    this.pendingAnswer = null;
+    console.log("🧹 Pending offers and answers cleared");
+
     console.log("✅ Call resources cleaned up");
   }
 
@@ -2247,6 +2298,54 @@ class CallingService {
 
     // Store the interval ID for cleanup
     this.connectionQualityInterval = monitorInterval as unknown as number;
+  }
+
+  // Recreate peer connection when signaling state gets corrupted
+  private async recreatePeerConnection() {
+    try {
+      console.log(
+        "🔄 Recreating peer connection due to signaling state issues..."
+      );
+
+      // Clean up old connection
+      if (this.peerConnection) {
+        this.peerConnection.close();
+        this.peerConnection = null;
+      }
+
+      // Wait a bit for cleanup
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Create new peer connection
+      this.peerConnection = this.createPeerConnection();
+
+      // Re-add local stream if available
+      if (this.localStream) {
+        this.localStream.getTracks().forEach((track) => {
+          if (this.peerConnection) {
+            this.peerConnection.addTrack(track, this.localStream!);
+          }
+        });
+      }
+
+      console.log("✅ Peer connection recreated successfully");
+
+      // If we have a pending offer, process it now
+      if (this.pendingOffer) {
+        console.log("🔄 Processing pending offer with new connection...");
+        await this.handleOffer(this.pendingOffer);
+        this.pendingOffer = null;
+      }
+
+      // If we have a pending answer, process it now
+      if (this.pendingAnswer) {
+        console.log("🔄 Processing pending answer with new connection...");
+        await this.handleAnswer(this.pendingAnswer);
+        this.pendingAnswer = null;
+      }
+    } catch (error: any) {
+      console.error("❌ Error recreating peer connection:", error);
+    }
   }
 }
 
