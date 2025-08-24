@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC } from "react";
 // import { useSelector, useDispatch } from "react-redux";
 // import { RootState } from "../../store";
 // import { clearAuth } from "../../slice/authSlice";
@@ -66,46 +66,46 @@ const TestNotification: FC<TestNotificationProps> = () => {
   // };
 
   return (
-   // <div className="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-md z-50">
-  //     <h3 className="text-lg font-semibold mb-4">Authentication Test</h3>
+    // <div className="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-md z-50">
+    //     <h3 className="text-lg font-semibold mb-4">Authentication Test</h3>
 
-  //     <div className="space-y-2 mb-4">
-  //       <button
-  //         onClick={testAuthState}
-  //         className="w-full bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
-  //       >
-  //         Test Auth State
-  //       </button>
+    //     <div className="space-y-2 mb-4">
+    //       <button
+    //         onClick={testAuthState}
+    //         className="w-full bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
+    //       >
+    //         Test Auth State
+    //       </button>
 
-  //       <button
-  //         onClick={clearAuthData}
-  //         className="w-full bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
-  //       >
-  //         Clear All Auth Data
-  //       </button>
+    //       <button
+    //         onClick={clearAuthData}
+    //         className="w-full bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
+    //       >
+    //         Clear All Auth Data
+    //       </button>
 
-  //       <button
-  //         onClick={clearResults}
-  //         className="w-full bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600"
-  //       >
-  //         Clear Results
-  //       </button>
-  //     </div>
+    //       <button
+    //         onClick={clearResults}
+    //         className="w-full bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600"
+    //       >
+    //         Clear Results
+    //       </button>
+    //     </div>
 
-  //     <div className="max-h-64 overflow-y-auto">
-  //       <h4 className="font-medium mb-2">Test Results:</h4>
-  //       {testResults.length === 0 ? (
-  //         <p className="text-gray-500 text-sm">No tests run yet</p>
-  //       ) : (
-  //         <div className="space-y-1">
-  //           {testResults.map((result, index) => (
-  //             <div key={index} className="text-xs bg-gray-100 p-2 rounded">
-  //               {result}
-  //             </div>
-  //           ))}
-  //         </div>
-  //       )}
-  //     </div>
+    //     <div className="max-h-64 overflow-y-auto">
+    //       <h4 className="font-medium mb-2">Test Results:</h4>
+    //       {testResults.length === 0 ? (
+    //         <p className="text-gray-500 text-sm">No tests run yet</p>
+    //       ) : (
+    //         <div className="space-y-1">
+    //           {testResults.map((result, index) => (
+    //             <div key={index} className="text-xs bg-gray-100 p-2 rounded">
+    //               {result}
+    //             </div>
+    //           ))}
+    //         </div>
+    //       )}
+    //     </div>
     // </div>
     <></>
   );

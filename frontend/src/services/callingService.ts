@@ -1,6 +1,7 @@
 import { Socket } from "socket.io-client";
 import socketManager from "./socketManager";
 import axios from "axios";
+import { getApiUrl } from "../config/config";
 
 export interface CallData {
   callId: string;
@@ -70,7 +71,7 @@ class CallingService {
       }
 
       const response = await axios.post(
-        "http://localhost:5300/api/calls",
+        getApiUrl("/api/calls"),
         {
           receiverId: callData.receiverId,
           type: callData.type,
@@ -113,7 +114,7 @@ class CallingService {
       }
 
       await axios.put(
-        `http://localhost:5300/api/calls/${callId}`,
+        getApiUrl(`/api/calls/${callId}`),
         {
           status,
           duration,
@@ -260,7 +261,7 @@ class CallingService {
         callingSoundReadyState: this.callingSound?.readyState,
         ringingSoundReadyState: this.ringingSound?.readyState,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ CRITICAL ERROR in initializeCallSounds:", error);
       console.error("❌ Error stack:", error.stack);
     }
@@ -298,13 +299,15 @@ class CallingService {
         "Calling service: Restoring active call after socket reconnect..."
       );
       // Re-emit the call initiation to restore the call state
-      this.socket.emit("initiateCall", {
-        callerId: this.activeCall.callData.callerId,
-        callerName: this.activeCall.callData.callerName,
-        receiverId: this.activeCall.callData.receiverId,
-        callType: this.activeCall.callData.callType,
-        callerAvatar: this.activeCall.callData.callerAvatar,
-      });
+      if (this.socket) {
+        this.socket.emit("initiateCall", {
+          callerId: this.activeCall.callData.callerId,
+          callerName: this.activeCall.callData.callerName,
+          receiverId: this.activeCall.callData.receiverId,
+          callType: this.activeCall.callData.callType,
+          callerAvatar: this.activeCall.callData.callerAvatar,
+        });
+      }
     }
   }
 
@@ -356,7 +359,10 @@ class CallingService {
       console.log("🔄 Event data callerId:", data.callerId);
       console.log("🔄 Event data receiverId:", data.receiverId);
       console.log("🔄 Socket ID:", this.socket?.id);
-      console.log("🔄 Socket connected:", this.socket?.connected);
+      console.log(
+        "🔌 Socket ready state:",
+        this.socket?.connected ? "connected" : "disconnected"
+      );
       console.log(
         "🔄 Event count - callAccepted:",
         this.eventCounts.callAccepted
@@ -506,7 +512,10 @@ class CallingService {
     console.log("🔌 CALLING SERVICE: Socket event listeners set up");
     console.log("🔌 Socket ID:", this.socket?.id);
     console.log("🔌 Socket connected:", this.socket?.connected);
-    console.log("🔌 Socket ready state:", this.socket?.readyState);
+    console.log(
+      "🔌 Socket ready state:",
+      this.socket?.connected ? "connected" : "disconnected"
+    );
     console.log("🔌 Current user ID:", this.getCurrentUserId());
     console.log(
       "🔌 Socket event listeners registered for: offer, answer, iceCandidate, callAccepted, callConnected, callEnded, callFailed, callDeclined, callCancelled, test"
@@ -674,7 +683,7 @@ class CallingService {
 
     try {
       // Ensure we have a valid socket connection
-      const socket = await this.ensureSocket();
+      await this.ensureSocket();
       console.log("✅ Socket available, proceeding with media access...");
 
       // Get user media
@@ -750,12 +759,14 @@ class CallingService {
 
       // Emit initiateCall event to socket server
       console.log("Emitting initiateCall to socket server...");
-      socket.emit("initiateCall", {
-        callerId: callData.callerId,
-        receiverId: callData.receiverId,
-        callType: callData.callType,
-        callId: callId,
-      });
+      if (this.socket) {
+        this.socket.emit("initiateCall", {
+          callerId: callData.callerId,
+          receiverId: callData.receiverId,
+          callType: callData.callType,
+          callId: callId,
+        });
+      }
 
       console.log("✅ initiateCall event emitted to socket server");
 
@@ -781,7 +792,7 @@ class CallingService {
       console.log("🔄 Current socket ID:", this.socket?.id);
 
       // Ensure we have a valid socket connection
-      const socket = await this.ensureSocket();
+      await this.ensureSocket();
 
       // Get user media with specific constraints for localhost testing
       const constraints = {
@@ -840,7 +851,7 @@ class CallingService {
             }))
           );
         }
-      } catch (videoError) {
+      } catch (videoError: any) {
         console.error("❌ Video access failed:", videoError);
         console.error("❌ Video error name:", videoError.name);
         console.error("❌ Video error message:", videoError.message);
@@ -914,11 +925,15 @@ class CallingService {
               if (videoTracks.length > 0) {
                 console.log("✅ Video track obtained separately!");
                 videoTracks.forEach((track) => {
-                  this.localStream.addTrack(track);
-                  console.log("✅ Video track added to existing audio stream");
+                  if (this.localStream) {
+                    this.localStream.addTrack(track);
+                    console.log(
+                      "✅ Video track added to existing audio stream"
+                    );
+                  }
                 });
               }
-            } catch (separateVideoError) {
+            } catch (separateVideoError: any) {
               console.log(
                 "⚠️ Separate video access also failed:",
                 separateVideoError.message
@@ -1357,7 +1372,9 @@ class CallingService {
             hasSocket: !!this.socket,
             isConnected: this.socket?.connected || false,
             socketId: this.socket?.id || null,
-            connectionState: this.socket?.connectionState || "unknown",
+            connectionState: this.socket?.connected
+              ? "connected"
+              : "disconnected",
             socketManagerStatus: socketManager.getSocketStatus(),
           },
           eventCounts: this.eventCounts,
@@ -1437,7 +1454,7 @@ class CallingService {
       } else {
         console.error("❌ Cannot send answer: missing socket or senderId");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error handling offer:", error);
       console.error("❌ Error details:", error.message, error.stack);
     }
@@ -1470,10 +1487,10 @@ class CallingService {
         hasAudio: data.answer.sdp.includes("m=audio"),
         videoLines: data.answer.sdp
           .split("\n")
-          .filter((line) => line.startsWith("m=video")),
+          .filter((line: string) => line.startsWith("m=video")),
         audioLines: data.answer.sdp
           .split("\n")
-          .filter((line) => line.startsWith("m=audio")),
+          .filter((line: string) => line.startsWith("m=audio")),
         fullSdp: data.answer.sdp,
       });
 
@@ -1514,7 +1531,7 @@ class CallingService {
       if (this.onCallConnected) {
         this.onCallConnected(data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error handling answer:", error);
       console.error("❌ Error details:", error.message, error.stack);
     }
@@ -1713,9 +1730,6 @@ class CallingService {
   }
 
   // Get socket instance
-  getSocket(): Socket | null {
-    return this.socket;
-  }
 
   // Get local stream
   getLocalStream(): MediaStream | null {
@@ -1954,19 +1968,21 @@ class CallingService {
       console.log("🔄 Creating WebRTC offer...");
 
       // Analyze local stream before creating offer
-      const localTracks = this.localStream.getTracks();
-      console.log("🔍 LOCAL STREAM ANALYSIS:", {
-        totalTracks: localTracks.length,
-        videoTracks: localTracks.filter((t) => t.kind === "video").length,
-        audioTracks: localTracks.filter((t) => t.kind === "audio").length,
-        trackDetails: localTracks.map((t) => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          muted: t.muted,
-          readyState: t.readyState,
-          id: t.id,
-        })),
-      });
+      if (this.localStream) {
+        const localTracks = this.localStream.getTracks();
+        console.log("🔍 LOCAL STREAM ANALYSIS:", {
+          totalTracks: localTracks.length,
+          videoTracks: localTracks.filter((t) => t.kind === "video").length,
+          audioTracks: localTracks.filter((t) => t.kind === "audio").length,
+          trackDetails: localTracks.map((t) => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            muted: t.muted,
+            readyState: t.readyState,
+            id: t.id,
+          })),
+        });
+      }
 
       const offer = await this.peerConnection.createOffer();
       console.log("✅ Offer created:", offer);
@@ -1974,14 +1990,18 @@ class CallingService {
       // Analyze the SDP to see what tracks are included
       console.log("🔍 OFFER SDP ANALYSIS:", {
         sdpType: offer.type,
-        hasVideo: offer.sdp.includes("m=video"),
-        hasAudio: offer.sdp.includes("m=audio"),
+        hasVideo: offer.sdp?.includes("m=video") || false,
+        hasAudio: offer.sdp?.includes("m=audio") || false,
         videoLines: offer.sdp
-          .split("\n")
-          .filter((line) => line.startsWith("m=video")),
+          ? offer.sdp
+              .split("\n")
+              .filter((line: string) => line.startsWith("m=video"))
+          : [],
         audioLines: offer.sdp
-          .split("\n")
-          .filter((line) => line.startsWith("m=audio")),
+          ? offer.sdp
+              .split("\n")
+              .filter((line: string) => line.startsWith("m=audio"))
+          : [],
         fullSdp: offer.sdp,
       });
 
@@ -2078,13 +2098,6 @@ class CallingService {
     console.log("✅ Call resources cleaned up");
   }
 
-  // Clean up custom ringtone resources
-  private cleanupCustomRingtone() {
-    // This method is no longer needed as custom ringtone is removed.
-    // Keeping it for now, but it will not have an effect.
-    console.log("✅ Custom ringtone resources cleaned up");
-  }
-
   // Clean up all sound resources
   private cleanupAllSounds() {
     // Clean up MP3 sounds
@@ -2129,7 +2142,7 @@ class CallingService {
       // Request screen share with audio if possible
       const constraints = {
         video: {
-          mediaSource: "screen" as MediaSource,
+          mediaSource: "screen" as any,
           width: { ideal: 1920 },
           height: { ideal: 1080 },
           frameRate: { ideal: 30 },
@@ -2159,7 +2172,7 @@ class CallingService {
       console.log("✅ Screen share video track:", this.screenShareTrack);
 
       // Add screen share track to peer connection
-      const sender = this.peerConnection.addTrack(
+      this.peerConnection.addTrack(
         this.screenShareTrack,
         this.screenShareStream
       );
@@ -2296,6 +2309,15 @@ class CallingService {
       },
       currentPlayingSound: this.currentPlayingSound ? "Playing" : "None",
     };
+  }
+
+  // Public getter methods for external access
+  public getActiveCall() {
+    return this.activeCall;
+  }
+
+  public getSocket() {
+    return this.socket;
   }
 }
 

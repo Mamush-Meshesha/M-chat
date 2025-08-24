@@ -345,17 +345,19 @@ const CallDialog: FC<CallDialogProps> = ({
       console.log("🔄 Reason:", data.reason);
 
       // Update the call type in the calling service
-      if (callingService.activeCall) {
-        callingService.activeCall.callData.callType = data.newCallType;
+      const activeCall = callingService.getActiveCall();
+      if (activeCall) {
+        activeCall.callData.callType = data.newCallType;
         console.log("✅ Call type updated in calling service");
       }
     };
 
     // Add event listener for call type changes
-    callingService.socket?.on("callTypeChanged", handleCallTypeChange);
+    const socket = callingService.getSocket();
+    socket?.on("callTypeChanged", handleCallTypeChange);
 
     return () => {
-      callingService.socket?.off("callTypeChanged", handleCallTypeChange);
+      socket?.off("callTypeChanged", handleCallTypeChange);
     };
   }, [callingService]);
 

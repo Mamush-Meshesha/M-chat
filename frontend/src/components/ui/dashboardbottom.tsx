@@ -5,11 +5,7 @@ import { IoSend } from "react-icons/io5";
 import { MdOutlineEmojiEmotions, MdOutlineKeyboardVoice } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/index";
-import {
-  sendMessageRequest,
-  setNewMessage,
-  addMessage,
-} from "../../slice/userSlice";
+import { addMessage, setNewMessage } from "../../slice/userSlice";
 import { Socket } from "socket.io-client";
 
 interface DashboardbottomProps {
@@ -17,13 +13,15 @@ interface DashboardbottomProps {
   socket: Socket | null;
 }
 
-const Dashboardbottom: FC<DashboardbottomProps> = ({ scrollRef, socket }) => {
+const Dashboardbottom: FC<DashboardbottomProps> = ({ socket }) => {
   const dispatch = useDispatch();
   const newMessage = useSelector((state: RootState) => state.user.newMessage);
   const currentUserChat = useSelector(
     (state: RootState) => state.user.currentUser
   );
-  const { name, _id } = useSelector((state: RootState) => state.auth.user);
+  const authUser = useSelector((state: RootState) => state.auth.user);
+  const name = authUser?.name || "User";
+  const _id = authUser?._id || "";
 
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -86,14 +84,6 @@ const Dashboardbottom: FC<DashboardbottomProps> = ({ scrollRef, socket }) => {
 
     // Immediately add message to Redux store for instant display
     dispatch(addMessage(messageData));
-
-    // Send message through Redux saga for backend persistence
-    const data = {
-      message: newMessage,
-      resiverId: currentUserChat._id,
-      senderName: name,
-    };
-    dispatch(sendMessageRequest(data));
 
     // Send message through socket for real-time
     if (socket && currentUserChat) {

@@ -42,8 +42,7 @@ const LoginComp: FC<LoginProps> = () => {
 
     console.log("Dispatching login with data:", loginData);
 
-    dispatch(loginStart(loginData));
-
+    dispatch(loginStart());
   };
   return (
     <div className="bg-[#4EAC6D] min-h-screen p-10 overflow-hidden ">

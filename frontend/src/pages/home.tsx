@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FC, useEffect, useRef, useState, useCallback } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import Dashboardheader from "../components/ui/dashboardheader";
 import Dashboardbottom from "../components/ui/dashboardbottom";
 import Header from "../components/header";
@@ -34,6 +34,8 @@ interface CallData {
   callType: "audio" | "video";
   callerAvatar?: string;
   callId?: string;
+  receiverId?: string;
+  status?: string;
 }
 
 const Home: FC<HomeProps> = () => {
@@ -146,28 +148,32 @@ const Home: FC<HomeProps> = () => {
 
           // Listen for users
           socket.current.on("getUsers", (users) => {
-            const filteredUser = users.filter(
-              (user: any) => user.userId !== authUser._id
-            );
-            setActiveUser(filteredUser);
+            if (authUser?._id) {
+              const filteredUser = users.filter(
+                (user: any) => user.userId !== authUser._id
+              );
+              setActiveUser(filteredUser);
+            }
           });
 
           // Listen for messages
           socket.current.on("getMessage", (data) => {
             console.log("Message received:", data);
             dispatch(addMessage(data));
-            dispatch(addUnreadMessage(data.receiverId));
+            if (data.receiverId) {
+              dispatch(addUnreadMessage(data.receiverId));
+            }
           });
 
           // Listen for typing indicators
           socket.current.on("userTyping", (data) => {
-            if (data.receiverId === authUser._id) {
+            if (data.receiverId === authUser?._id) {
               dispatch(setTypingUser(data.senderId));
             }
           });
 
           socket.current.on("userStopTyping", (data) => {
-            if (data.receiverId === authUser._id) {
+            if (data.receiverId === authUser?._id) {
               dispatch(removeTypingUser(data.senderId));
             }
           });
@@ -175,16 +181,18 @@ const Home: FC<HomeProps> = () => {
           // Listen for incoming calls
           socket.current.on("incomingCall", (data) => {
             console.log("Incoming call received:", data);
-            setIncomingCall({
-              callId: data.callId,
-              callerId: data.callerId,
-              receiverId: authUser._id, // Add the missing receiverId
-              callType: data.callType,
-              callerName: data.callerName || "Unknown",
-              callerAvatar: data.callerAvatar,
-              status: "ringing" as const, // Add the missing status
-            });
-            setIsCallDialogOpen(true);
+            if (authUser?._id) {
+              setIncomingCall({
+                callId: data.callId,
+                callerId: data.callerId,
+                receiverId: authUser._id, // Add the missing receiverId
+                callType: data.callType,
+                callerName: data.callerName || "Unknown",
+                callerAvatar: data.callerAvatar,
+                status: "ringing" as const, // Add the missing status
+              });
+              setIsCallDialogOpen(true);
+            }
           });
         } else {
           console.log(
@@ -236,7 +244,7 @@ const Home: FC<HomeProps> = () => {
           "🔄 Socket health check: Socket disconnected, attempting to reconnect..."
         );
         // The disconnect event handler will handle reconnection
-      } else if (socket.current && socket.current.connected) {
+      } else if (socket.current && socket.current.connected && authUser?._id) {
         // Socket is healthy, ensure user is still added
         console.log("✅ Socket health check: Socket is healthy");
         // Optionally re-add user to ensure they're still in the active users list
@@ -272,7 +280,12 @@ const Home: FC<HomeProps> = () => {
 
   // Mark messages as read when viewing a chat
   useEffect(() => {
+    console.log("🔍 Home: currentUserChat changed:", currentUserChat);
     if (currentUserChat && currentUserChat._id) {
+      console.log(
+        "🔍 Home: Marking messages as read for:",
+        currentUserChat._id
+      );
       dispatch(markMessagesAsRead(currentUserChat._id));
     }
   }, [currentUserChat, dispatch]);
@@ -295,7 +308,7 @@ const Home: FC<HomeProps> = () => {
   const handleAcceptCall = async () => {
     console.log("🔄 HOME: handleAcceptCall called");
     console.log("🔄 HOME: Incoming call data:", incomingCall);
-    console.log("🔄 HOME: Current user ID:", authUser._id);
+    console.log("🔄 HOME: Current user ID:", authUser?._id);
     console.log("🔄 HOME: Socket status:", !!socket.current);
     console.log("🔄 HOME: Socket ID:", socket.current?.id);
     console.log(
@@ -303,7 +316,7 @@ const Home: FC<HomeProps> = () => {
       callingService.getSocket()?.id
     );
 
-    if (incomingCall && socket.current) {
+    if (incomingCall && socket.current && authUser?._id) {
       try {
         // Emit accept call event to socket server
         socket.current.emit("acceptCall", {
@@ -326,7 +339,7 @@ const Home: FC<HomeProps> = () => {
         const success = await callingService.acceptCall({
           callId: incomingCall.callId || "",
           callerId: incomingCall.callerId,
-          receiverId: authUser._id || "",
+          receiverId: authUser._id,
           callType: incomingCall.callType,
           callerName: incomingCall.callerName,
           callerAvatar: incomingCall.callerAvatar,
@@ -355,7 +368,7 @@ const Home: FC<HomeProps> = () => {
     console.log("🔄 Home: Declining incoming call...");
     console.log("Incoming call data:", incomingCall);
 
-    if (incomingCall && socket.current) {
+    if (incomingCall && socket.current && authUser?._id) {
       try {
         // Emit decline call event to socket server
         socket.current.emit("declineCall", {
@@ -374,7 +387,7 @@ const Home: FC<HomeProps> = () => {
         await callingService.declineCall({
           callId: incomingCall.callId || "",
           callerId: incomingCall.callerId,
-          receiverId: authUser._id || "",
+          receiverId: authUser._id,
           callType: incomingCall.callType,
           callerName: incomingCall.callerName,
           callerAvatar: incomingCall.callerAvatar,
@@ -411,7 +424,7 @@ const Home: FC<HomeProps> = () => {
       setIsCallDialogOpen(false);
 
       // Emit end call event to socket server if we have call data
-      if (incomingCall && socket.current) {
+      if (incomingCall && socket.current && authUser?._id) {
         socket.current.emit("endCall", {
           callerId: incomingCall.callerId,
           receiverId: authUser._id,
@@ -452,7 +465,7 @@ const Home: FC<HomeProps> = () => {
             activeUser={activeUser}
             currentUserChat={currentUserChat}
             socket={socket.current}
-            currentUserId={authUser._id}
+            currentUserId={authUser?._id || ""}
           />
         </div>
 
@@ -468,7 +481,7 @@ const Home: FC<HomeProps> = () => {
               <>
                 {recConversation && recConversation.length > 0 ? (
                   recConversation.map((con, index) =>
-                    con.senderId === authUser._id ? (
+                    con.senderId === authUser?._id ? (
                       <div
                         ref={
                           index === recConversation.length - 1
@@ -628,7 +641,7 @@ const Home: FC<HomeProps> = () => {
         <button
           onClick={() => {
             console.log("🧪 Testing ringtone...");
-            callingService.testRingtone();
+            callingService.testSounds();
           }}
           className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors w-full"
           title="Test the phone ringtone"

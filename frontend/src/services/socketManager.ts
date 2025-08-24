@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { config } from "../config/config";
 
 class SocketManager {
   private static instance: SocketManager;
@@ -60,7 +61,7 @@ class SocketManager {
 
     console.log("🚀 SocketManager: Attempting to connect...");
 
-    this.socket = io("http://localhost:8000", {
+    this.socket = io(config.SOCKET_URL, {
       // ✅ --- KEY CHANGES FOR SPEED AND RELIABILITY --- ✅
       reconnection: true, // Enable built-in reconnection
       reconnectionAttempts: 5, // Attempt to reconnect 5 times

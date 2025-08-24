@@ -31,7 +31,7 @@ interface UnreadCount {
 
 export interface userState {
   user: User | null;
-  currentUser: null;
+  currentUser: User | null;
   newMessage: string;
   conversation: Send[];
   recConversation: Message[];
@@ -161,7 +161,7 @@ export const userSlice = createSlice({
     },
 
     // local state
-    setCurrentUser: (state, action: PayloadAction<null>) => {
+    setCurrentUser: (state, action: PayloadAction<User | null>) => {
       state.currentUser = action.payload;
     },
     setNewMessage: (state, action: PayloadAction<string>) => {

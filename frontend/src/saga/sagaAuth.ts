@@ -18,12 +18,12 @@ import {
   sendMessageRequest,
   sendMessageSuccess,
 } from "../slice/userSlice";
+import { getApiUrl } from "../config/config";
 
-function* loginUser(action: PayloadAction) {
+function* loginUser(
+  action: PayloadAction<{ email: string; password: string }>
+) {
   try {
-    console.log("Login saga called with payload:", action.payload);
-
-    // Extract email and password from the action payload
     const { email, password } = action.payload;
 
     if (!email || !password) {
@@ -31,32 +31,26 @@ function* loginUser(action: PayloadAction) {
       return;
     }
 
-    // Make real API call to your backend
-    const res: AxiosResponse = yield call(
+    // Make real API call to your backend using Redux Saga pattern
+    const response: AxiosResponse = yield call(
       axios.post,
-      "http://localhost:5300/api/users/auth",
+      getApiUrl("/api/users/auth"),
       {
         email,
         password,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true, // Important for cookies
       }
     );
 
-    console.log("Login API response:", res.data);
+    console.log("Login API response:", response.data);
 
     // Backend should return user data (token might be in response or cookie)
-    if (res.data && res.data._id) {
+    if (response.data && response.data._id) {
       // If token is in response, include it; if not, it's in cookie
       const userData = {
-        _id: res.data._id,
-        name: res.data.name,
-        email: res.data.email,
-        token: res.data.token, // Include token if backend sends it
+        _id: response.data._id,
+        name: response.data.name,
+        email: response.data.email,
+        token: response.data.token, // Include token if backend sends it
       };
 
       yield put(loginSuccess(userData));
@@ -74,7 +68,7 @@ function* logoutUser() {
     // Make real API call to logout endpoint
     yield call(
       axios.post,
-      "http://localhost:5300/api/users/logout",
+      getApiUrl("/api/users/logout"),
       {},
       {
         withCredentials: true, // Important for HTTP-only cookies
@@ -94,7 +88,7 @@ function* fetchFriends() {
   try {
     const res: AxiosResponse = yield call(
       axios.get,
-      "http://localhost:5300/api/users/get-friends",
+      getApiUrl("/api/users/get-friends"),
       {
         withCredentials: true,
       }
@@ -105,11 +99,11 @@ function* fetchFriends() {
   }
 }
 
-function* sendMessageSaga(action: PayloadAction) {
+function* sendMessageSaga(action: PayloadAction<any>) {
   try {
     const res: AxiosResponse = yield call(
       axios.post,
-      "http://localhost:5300/api/users/send-message",
+      getApiUrl("/api/users/send-message"),
       action.payload,
       {
         headers: {
@@ -125,11 +119,11 @@ function* sendMessageSaga(action: PayloadAction) {
   }
 }
 
-function* fetchMessageSaga(action: PayloadAction) {
+function* fetchMessageSaga(action: PayloadAction<string>) {
   try {
     const res: AxiosResponse = yield call(
       axios.get,
-      `http://localhost:5300/api/users/message/${action.payload}`,
+      getApiUrl(`/api/users/message/${action.payload}`),
       {
         withCredentials: true,
       }
@@ -138,9 +132,6 @@ function* fetchMessageSaga(action: PayloadAction) {
   } catch (error: any) {
     yield put(fetchUserFailure(error.message));
   }
-}
-function* watchRegisterUser() {
-  yield takeLatest(registerUserRequest.type, registerUser);
 }
 
 function* watchLoginUser() {
@@ -162,6 +153,7 @@ function* watchSendMessage() {
 function* watchFetchMessageSaga() {
   yield takeEvery(fetchMessageRequest.type, fetchMessageSaga);
 }
+
 // root saga
 export default function* rootSaga() {
   yield all([

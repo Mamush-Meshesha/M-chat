@@ -57,7 +57,6 @@ const SettingHeader: FC<SettingHeaderProps> = () => {
   const userName = authUser.name || "User Name";
   const userEmail = authUser.email || "user@email.com";
   const userId = authUser._id || "Not available";
-  const userCreatedAt = authUser.createdAt || null;
 
   return (
     <div className="h-screen bg-gray-50 overflow-hidden" id="setting">
@@ -159,16 +158,6 @@ const SettingHeader: FC<SettingHeaderProps> = () => {
                       {userId}
                     </span>
                   </div>
-                  {userCreatedAt && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg gap-2 sm:gap-0">
-                      <span className="text-gray-600 text-sm sm:text-base">
-                        Member Since
-                      </span>
-                      <span className="font-medium text-sm sm:text-sm text-gray-500">
-                        {new Date(userCreatedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

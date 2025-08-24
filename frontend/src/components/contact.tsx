@@ -1,14 +1,9 @@
-import { FC, useState, useEffect } from "react";
-import {
-  FiSearch,
-  FiUserPlus,
-  FiMoreVertical,
-  FiMessageCircle,
-} from "react-icons/fi";
-import { MdGroup } from "react-icons/md";
+import { FC, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
 import axios from "axios";
+import { FaUserPlus, FaSearch, FaTimes } from "react-icons/fa";
+import { MdOutlineEmail } from "react-icons/md";
 
 interface User {
   _id: string;
@@ -65,19 +60,23 @@ const ContactHeader: FC<ContactHeaderProps> = () => {
 
       if (response.data && Array.isArray(response.data)) {
         // Filter out current user and format as contacts
-        const currentUser = JSON.parse(authUser);
-        const allUsers = response.data.filter(
-          (user: any) => user._id !== currentUser._id
-        );
-        setContacts(
-          allUsers.map((user: any) => ({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            status: "offline", // Default status
-            lastSeen: "Unknown",
-          }))
-        );
+        if (authUser) {
+          const currentUser = JSON.parse(authUser);
+          const allUsers = response.data.filter(
+            (user: any) => user._id !== currentUser._id
+          );
+          setContacts(
+            allUsers.map((user: any) => ({
+              _id: user._id,
+              name: user.name,
+              email: user.email,
+              status: "offline", // Default status
+              lastSeen: "Unknown",
+            }))
+          );
+        } else {
+          setContacts([]);
+        }
       } else {
         setContacts([]);
       }
@@ -190,7 +189,7 @@ const ContactHeader: FC<ContactHeaderProps> = () => {
               onClick={() => setShowAddContact(true)}
               className="bg-[#92ffb3] hover:bg-[#7aee9f] text-white p-2 sm:p-2.5 rounded-lg transition-colors flex items-center gap-2"
             >
-              <FiUserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <FaUserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Add Contact</span>
             </button>
           </div>
@@ -199,7 +198,7 @@ const ContactHeader: FC<ContactHeaderProps> = () => {
         {/* Search Bar - Fixed */}
         <div className="flex-shrink-0 p-4 sm:p-6 pt-0">
           <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             <input
               type="text"
               placeholder="Search contacts..."
@@ -214,7 +213,7 @@ const ContactHeader: FC<ContactHeaderProps> = () => {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-0">
           {filteredContacts.length === 0 ? (
             <div className="text-center py-8">
-              <FiUserPlus className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <FaUserPlus className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 text-lg mb-2">
                 {searchTerm ? "No contacts found" : "No contacts yet"}
               </p>
@@ -283,14 +282,14 @@ const ContactHeader: FC<ContactHeaderProps> = () => {
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Start chat"
                       >
-                        <FiMessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <MdOutlineEmail className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                       <button
                         onClick={() => handleRemoveContact(contact)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Remove contact"
                       >
-                        <FiMoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <FaTimes className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
                   </div>

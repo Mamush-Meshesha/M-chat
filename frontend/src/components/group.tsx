@@ -61,8 +61,8 @@ const GroupHeader: FC<GroupHeaderProps> = () => {
       setLoading(true);
 
       // Get token from localStorage
-      const authUser = localStorage.getItem("authUser");
-      const token = authUser ? JSON.parse(authUser).token : null;
+      const storedAuthUser = localStorage.getItem("authUser");
+      const token = storedAuthUser ? JSON.parse(storedAuthUser).token : null;
 
       if (!token) {
         throw new Error("No authentication token found");
@@ -80,23 +80,27 @@ const GroupHeader: FC<GroupHeaderProps> = () => {
 
       if (response.data && Array.isArray(response.data)) {
         // Filter out current user and format as contacts
-        const currentUser = JSON.parse(authUser);
-        if (currentUser && currentUser._id) {
-          const allUsers = response.data.filter(
-            (user: { _id: string; name: string; email: string }) =>
-              user._id !== currentUser._id
-          );
-          setContacts(
-            allUsers.map(
-              (user: { _id: string; name: string; email: string }) => ({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                status: "offline" as const, // Default status
-                lastSeen: "Unknown",
-              })
-            )
-          );
+        if (storedAuthUser) {
+          const currentUser = JSON.parse(storedAuthUser);
+          if (currentUser && currentUser._id) {
+            const allUsers = response.data.filter(
+              (user: { _id: string; name: string; email: string }) =>
+                user._id !== currentUser._id
+            );
+            setContacts(
+              allUsers.map(
+                (user: { _id: string; name: string; email: string }) => ({
+                  _id: user._id,
+                  name: user.name,
+                  email: user.email,
+                  status: "offline" as const, // Default status
+                  lastSeen: "Unknown",
+                })
+              )
+            );
+          } else {
+            setContacts([]);
+          }
         } else {
           setContacts([]);
         }
@@ -125,7 +129,7 @@ const GroupHeader: FC<GroupHeaderProps> = () => {
       // Fetch groups from your backend API
       const response = await axios.get("http://localhost:5300/api/groups", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token || ""}`,
         },
       });
 
@@ -207,11 +211,11 @@ const GroupHeader: FC<GroupHeaderProps> = () => {
           description: "A group to get you started",
           memberIds: contacts
             .slice(0, Math.min(3, contacts.length))
-            .map((c) => c._id),
+            .map((contact) => contact._id),
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token || ""}`,
           },
         }
       );

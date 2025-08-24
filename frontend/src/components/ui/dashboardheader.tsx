@@ -125,13 +125,6 @@ const Dashboardheader: FC<DashboardheaderProps> = ({
     }
   };
 
-  // Handle incoming call (simulated)
-  const handleIncomingCall = () => {
-    setCallType("audio");
-    setIsIncomingCall(true);
-    setIsCallDialogOpen(true);
-  };
-
   // Call action handlers - These are now handled by the calling service
   const handleAcceptCall = async () => {
     console.log(

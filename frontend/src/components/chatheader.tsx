@@ -17,17 +17,17 @@ interface ChatHeaderProps {
 const ChatHeader: FC<ChatHeaderProps> = ({ activeUser, unreadCounts }) => {
   const dispatch = useDispatch();
   const friends = useSelector((state: RootState) => state.user.user);
-  const currentFriend = useSelector(
-    (state: RootState) => state.user.currentUser
-  );
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
   // Debug logging
   console.log("ChatHeader - Props received:", { activeUser, unreadCounts });
-  console.log("ChatHeader - Redux state:", { friends, currentFriend });
+  console.log("ChatHeader - Redux state:", { friends, currentUser });
 
   const handleToSendMessage = (user: any) => {
-    console.log("Clicking on user:", user);
+    console.log("🔍 ChatHeader: User clicked:", user);
+    console.log("🔍 ChatHeader: Dispatching setCurrentUser with:", user);
     dispatch(setCurrentUser(user));
+    console.log("🔍 ChatHeader: setCurrentUser dispatched");
   };
 
   useEffect(() => {
@@ -36,11 +36,11 @@ const ChatHeader: FC<ChatHeaderProps> = ({ activeUser, unreadCounts }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (currentFriend?._id) {
-      console.log("ChatHeader - Fetching messages for:", currentFriend._id);
-      dispatch(fetchMessageRequest(currentFriend._id));
+    if (currentUser?._id) {
+      console.log("ChatHeader - Fetching messages for:", currentUser._id);
+      dispatch(fetchMessageRequest(currentUser._id));
     }
-  }, [currentFriend?._id, dispatch]);
+  }, [currentUser?._id, dispatch]);
 
   return (
     <div className="p-3 sm:p-4 md:p-5 h-full overflow-y-auto">
@@ -89,7 +89,7 @@ const ChatHeader: FC<ChatHeaderProps> = ({ activeUser, unreadCounts }) => {
                       key={index}
                       onClick={() => handleToSendMessage(user)}
                       className={`cursor-pointer transition-all duration-200 ${
-                        currentFriend?._id === user._id
+                        currentUser?._id === user._id
                           ? "bg-[#4EAC6D] bg-opacity-10 border-l-4 border-[#4EAC6D]"
                           : "hover:bg-gray-100 border-l-4 border-transparent"
                       }`}
@@ -111,7 +111,7 @@ const ChatHeader: FC<ChatHeaderProps> = ({ activeUser, unreadCounts }) => {
                           <div className="flex items-center justify-between">
                             <h3
                               className={`font-medium truncate text-sm sm:text-base ${
-                                currentFriend?._id === user._id
+                                currentUser?._id === user._id
                                   ? "text-[#4EAC6D]"
                                   : "text-gray-800"
                               }`}
@@ -164,23 +164,36 @@ const ChatHeader: FC<ChatHeaderProps> = ({ activeUser, unreadCounts }) => {
                 activeUser.map((user: any, index: number) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 sm:py-2"
+                    onClick={() => handleToSendMessage(user.authUser)}
+                    className={`cursor-pointer transition-all duration-200 hover:bg-gray-100 border-l-4 border-transparent ${
+                      currentUser?._id === user.authUser?._id
+                        ? "bg-[#4EAC6D] bg-opacity-10 border-l-4 border-[#4EAC6D]"
+                        : ""
+                    }`}
                   >
-                    <div className="relative">
-                      <img
-                        src="/profile.jpg"
-                        alt={user.authUser?.name || "User"}
-                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-green-500"
-                      />
-                      <span className="absolute -bottom-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white"></span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-800 truncate text-sm sm:text-base">
-                        {user.authUser?.name || "Unknown User"}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-green-600">
-                        ● Online
-                      </p>
+                    <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-3">
+                      <div className="relative">
+                        <img
+                          src="/profile.jpg"
+                          alt={user.authUser?.name || "User"}
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-green-500"
+                        />
+                        <span className="absolute -bottom-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className={`font-medium truncate text-sm sm:text-base ${
+                            currentUser?._id === user.authUser?._id
+                              ? "text-[#4EAC6D]"
+                              : "text-gray-800"
+                          }`}
+                        >
+                          {user.authUser?.name || "Unknown User"}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-green-600">
+                          ● Online
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))

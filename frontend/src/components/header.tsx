@@ -22,7 +22,6 @@ const Header: FC<HeaderProps> = ({ activeUser, unreadCounts }) => {
   const [conditionalComponent, setConditionalComponent] =
     useState<string>("chat");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [openDialog, setOpenDialog] = useState<string | null>(null);
@@ -40,11 +39,9 @@ const Header: FC<HeaderProps> = ({ activeUser, unreadCounts }) => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         // Always keep sidebar expanded on desktop
-        setIsSidebarCollapsed(false);
         setIsMobileMenuOpen(false);
       } else {
         // Mobile/Tablet: Start collapsed
-        setIsSidebarCollapsed(false);
         setIsMobileMenuOpen(false);
       }
     };

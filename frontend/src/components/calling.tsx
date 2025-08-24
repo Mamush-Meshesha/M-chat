@@ -1,15 +1,9 @@
-import { FC, useState, useEffect } from "react";
-import {
-  MdOutlineCallReceived,
-  MdVideoCall,
-  MdCall,
-  MdCallEnd,
-  MdCallMade,
-} from "react-icons/md";
-import { FiSearch, FiFilter } from "react-icons/fi";
+import { FC, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
 import axios from "axios";
+import { MdOutlineCall, MdOutlineCallEnd } from "react-icons/md";
+import { FiSearch, FiFilter } from "react-icons/fi";
 
 interface CallRecord {
   id: string;
@@ -99,94 +93,102 @@ const CallingHeader: FC<ChatHeaderProps> = () => {
         // The backend returns an array directly, not wrapped in success/users
         if (Array.isArray(usersResponse.data)) {
           // Create sample call history from other users
-          const currentUser = JSON.parse(authUser);
-          const otherUsers = usersResponse.data.filter(
-            (user: any) => user._id !== currentUser._id
-          );
+          if (authUser) {
+            const currentUser = JSON.parse(authUser);
+            const otherUsers = usersResponse.data.filter(
+              (user: any) => user._id !== currentUser._id
+            );
 
-          const sampleCalls: CallRecord[] = otherUsers
-            .slice(0, 5)
-            .map((user: any, index: number) => ({
-              id: `call_${index + 1}`,
-              name: user.name,
-              type:
-                index % 3 === 0
-                  ? "incoming"
-                  : index % 3 === 1
-                  ? "outgoing"
-                  : "missed",
-              callType: index % 2 === 0 ? "audio" : "video",
-              duration:
-                index % 3 === 2
-                  ? "0:00"
-                  : `${Math.floor(Math.random() * 10) + 1}:${Math.floor(
-                      Math.random() * 60
-                    )
-                      .toString()
-                      .padStart(2, "0")}`,
-              date: new Date(
-                Date.now() - index * 24 * 60 * 60 * 1000
-              ).toLocaleDateString("en-US", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }),
-              time: new Date(
-                Date.now() - index * 24 * 60 * 60 * 1000
-              ).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }),
-              userId: user._id,
-            }));
+            const sampleCalls: CallRecord[] = otherUsers
+              .slice(0, 5)
+              .map((user: any, index: number) => ({
+                id: `call_${index + 1}`,
+                name: user.name,
+                type:
+                  index % 3 === 0
+                    ? "incoming"
+                    : index % 3 === 1
+                    ? "outgoing"
+                    : "missed",
+                callType: index % 2 === 0 ? "audio" : "video",
+                duration:
+                  index % 3 === 2
+                    ? "0:00"
+                    : `${Math.floor(Math.random() * 10) + 1}:${Math.floor(
+                        Math.random() * 60
+                      )
+                        .toString()
+                        .padStart(2, "0")}`,
+                date: new Date(
+                  Date.now() - index * 24 * 60 * 60 * 1000
+                ).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }),
+                time: new Date(
+                  Date.now() - index * 24 * 60 * 60 * 1000
+                ).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                }),
+                userId: user._id || `user_${index}`,
+              }));
 
-          setCallHistory(sampleCalls);
+            setCallHistory(sampleCalls);
+          } else {
+            setCallHistory([]);
+          }
         } else if (usersResponse.data.success && usersResponse.data.users) {
           // If backend returns success/users format
-          const currentUser = JSON.parse(authUser);
-          const otherUsers = usersResponse.data.users.filter(
-            (user: any) => user._id !== currentUser._id
-          );
+          if (authUser) {
+            const currentUser = JSON.parse(authUser);
+            const otherUsers = usersResponse.data.users.filter(
+              (user: any) => user._id !== currentUser._id
+            );
 
-          const sampleCalls: CallRecord[] = otherUsers
-            .slice(0, 5)
-            .map((user: any, index: number) => ({
-              id: `call_${index + 1}`,
-              name: user.name,
-              type:
-                index % 3 === 0
-                  ? "incoming"
-                  : index % 3 === 1
-                  ? "outgoing"
-                  : "missed",
-              callType: index % 2 === 0 ? "audio" : "video",
-              duration:
-                index % 3 === 2
-                  ? "0:00"
-                  : `${Math.floor(Math.random() * 10) + 1}:${Math.floor(
-                      Math.random() * 60
-                    )
-                      .toString()
-                      .padStart(2, "0")}`,
-              date: new Date(
-                Date.now() - index * 24 * 60 * 60 * 1000
-              ).toLocaleDateString("en-US", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }),
-              time: new Date(
-                Date.now() - index * 24 * 60 * 60 * 1000
-              ).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }),
-              userId: user._id,
-            }));
+            const sampleCalls: CallRecord[] = otherUsers
+              .slice(0, 5)
+              .map((user: any, index: number) => ({
+                id: `call_${index + 1}`,
+                name: user.name,
+                type:
+                  index % 3 === 0
+                    ? "incoming"
+                    : index % 3 === 1
+                    ? "outgoing"
+                    : "missed",
+                callType: index % 2 === 0 ? "audio" : "video",
+                duration:
+                  index % 3 === 2
+                    ? "0:00"
+                    : `${Math.floor(Math.random() * 10) + 1}:${Math.floor(
+                        Math.random() * 60
+                      )
+                        .toString()
+                        .padStart(2, "0")}`,
+                date: new Date(
+                  Date.now() - index * 24 * 60 * 60 * 1000
+                ).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }),
+                time: new Date(
+                  Date.now() - index * 24 * 60 * 60 * 1000
+                ).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                }),
+                userId: user._id || `user_${index}`,
+              }));
 
-          setCallHistory(sampleCalls);
+            setCallHistory(sampleCalls);
+          } else {
+            setCallHistory([]);
+          }
         } else {
           setCallHistory([]);
         }
@@ -247,12 +249,12 @@ const CallingHeader: FC<ChatHeaderProps> = () => {
 
   const getCallIcon = (type: string, callType: string) => {
     if (type === "missed") {
-      return <MdCallEnd className="text-red-500 text-lg" />;
+      return <MdOutlineCallEnd className="text-red-500 text-lg" />;
     }
     if (callType === "video") {
-      return <MdVideoCall className="text-blue-500 text-lg" />;
+      return <MdOutlineCall className="text-blue-500 text-lg" />;
     }
-    return <MdCall className="text-green-500 text-lg" />;
+    return <MdOutlineCall className="text-green-500 text-lg" />;
   };
 
   const getCallTypeColor = (type: string) => {
@@ -414,9 +416,9 @@ const CallingHeader: FC<ChatHeaderProps> = () => {
                       title="Call back"
                     >
                       {call.callType === "video" ? (
-                        <MdVideoCall className="w-5 h-5" />
+                        <MdOutlineCall className="w-5 h-5" />
                       ) : (
-                        <MdCall className="w-5 h-5" />
+                        <MdOutlineCall className="w-5 h-5" />
                       )}
                     </button>
                   </div>
