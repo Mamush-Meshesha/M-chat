@@ -706,7 +706,7 @@ class CallingService {
       };
 
       console.log("Requesting media with constraints:", constraints);
-      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.localStream = await this.requestMedia(constraints);
       console.log("✅ Media stream obtained:", this.localStream);
 
       // Create peer connection for caller
@@ -1184,6 +1184,9 @@ class CallingService {
       ],
       iceCandidatePoolSize: 10,
       iceTransportPolicy: "all" as RTCIceTransportPolicy, // Allow both UDP and TCP
+      // Mobile-specific optimizations
+      bundlePolicy: "max-bundle" as RTCBundlePolicy,
+      rtcpMuxPolicy: "require" as RTCRtcpMuxPolicy,
     };
 
     console.log("🔄 Creating peer connection with config:", configuration);
@@ -2392,6 +2395,37 @@ class CallingService {
       }
     } catch (error: any) {
       console.error("❌ Error recreating peer connection:", error);
+    }
+  }
+
+  private async requestMedia(
+    constraints: MediaStreamConstraints
+  ): Promise<MediaStream> {
+    console.log("🔄 Requesting media with constraints:", constraints);
+
+    // Mobile-specific audio optimizations
+    if (constraints.audio && typeof constraints.audio === "object") {
+      const audioConstraints = constraints.audio as MediaTrackConstraints;
+
+      // Add mobile-friendly audio settings
+      audioConstraints.echoCancellation = true;
+      audioConstraints.noiseSuppression = true;
+      audioConstraints.autoGainControl = true;
+      audioConstraints.sampleRate = 48000;
+      audioConstraints.channelCount = 1; // Mono for mobile
+
+      console.log("📱 Mobile audio constraints applied:", audioConstraints);
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("✅ Media stream obtained:", stream);
+      console.log("🎵 Audio tracks:", stream.getAudioTracks());
+      console.log("📹 Video tracks:", stream.getVideoTracks());
+      return stream;
+    } catch (error: any) {
+      console.error("❌ Error getting media stream:", error);
+      throw error;
     }
   }
 }

@@ -198,6 +198,13 @@ const CallDialog: FC<CallDialogProps> = ({
         remoteAudioRef.current.muted = false;
         console.log("🔊 Audio element unmuted");
 
+        // Mobile-specific audio optimizations
+        remoteAudioRef.current.volume = 1.0;
+        remoteAudioRef.current.playbackRate = 1.0;
+        remoteAudioRef.current.preload = "auto";
+
+        console.log("📱 Mobile audio optimizations applied");
+
         const audioTracks = stream.getAudioTracks();
         audioTracks.forEach((track, index) => {
           if (!track.enabled) {
