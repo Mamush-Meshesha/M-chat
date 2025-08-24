@@ -1160,12 +1160,14 @@ class CallingService {
   private createPeerConnection(): RTCPeerConnection {
     const configuration = {
       iceServers: [
+        // STUN servers for same network
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:stun3.l.google.com:19302" },
         { urls: "stun:stun4.l.google.com:19302" },
-        // TURN servers for relay when direct connection fails
+
+        // TURN servers for different networks (different PCs)
         {
           urls: "turn:openrelay.metered.ca:80",
           username: "openrelayproject",
@@ -1181,12 +1183,30 @@ class CallingService {
           username: "openrelayproject",
           credential: "openrelayproject",
         },
+
+        // Additional TURN servers for better coverage
+        {
+          urls: "turn:global.turn.twilio.com:3478?transport=udp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:global.turn.twilio.com:3478?transport=tcp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:global.turn.twilio.com:443?transport=tcp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
       ],
-      iceCandidatePoolSize: 10,
+      iceCandidatePoolSize: 20, // Increased for better network discovery
       iceTransportPolicy: "all" as RTCIceTransportPolicy, // Allow both UDP and TCP
-      // Mobile-specific optimizations
+      // Network optimization for different PCs
       bundlePolicy: "max-bundle" as RTCBundlePolicy,
       rtcpMuxPolicy: "require" as RTCRtcpMuxPolicy,
+      // Force TURN usage for different networks
     };
 
     console.log("🔄 Creating peer connection with config:", configuration);
@@ -1230,6 +1250,33 @@ class CallingService {
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
       console.log("🔄 ICE candidate generated:", event.candidate);
+
+      // Log network type for debugging
+      if (event.candidate) {
+        const candidate = event.candidate;
+        console.log("🌐 ICE Candidate Analysis:", {
+          type: candidate.type,
+          protocol: candidate.protocol,
+          address: candidate.address,
+          port: candidate.port,
+          isRelay: candidate.type === "relay",
+          isSrflx: candidate.type === "srflx",
+          isHost: candidate.type === "host",
+          isPrflx: candidate.type === "prflx",
+        });
+
+        // Prioritize TURN servers for different networks
+        if (candidate.type === "relay") {
+          console.log("🔄 TURN relay candidate - good for different PCs!");
+        } else if (candidate.type === "srflx") {
+          console.log(
+            "🔄 STUN reflexive candidate - may work for different PCs"
+          );
+        } else if (candidate.type === "host") {
+          console.log("🔄 Host candidate - only works for same network");
+        }
+      }
+
       if (event.candidate && this.socket && this.activeCall) {
         // Only send valid ICE candidates
         if (this.isValidIceCandidate(event.candidate)) {
