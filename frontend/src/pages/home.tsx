@@ -15,6 +15,7 @@ import {
   removeTypingUser,
   addUnreadMessage,
   markMessagesAsRead,
+  setCurrentUser,
 } from "../slice/userSlice";
 import callingService from "../services/callingService";
 import socketManager from "../services/socketManager";
@@ -699,12 +700,37 @@ const Home: FC<HomeProps> = () => {
                 Recent Chats
               </h2>
               <div className="space-y-3">
-                {/* Chat list will be populated here */}
-                <div className="bg-white rounded-lg p-4 shadow-sm border">
-                  <p className="text-gray-600 text-center">
-                    Chat list will appear here
-                  </p>
-                </div>
+                {activeUser && activeUser.length > 0 ? (
+                  activeUser.map((user: any, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        // Set this user as current chat
+                        dispatch(setCurrentUser(user));
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+                          <img
+                            src={user.avatar || "/profile.jpg"}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{user.name}</h3>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <p className="text-gray-600 text-center">No recent chats available</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : mobileTab === "contacts" ? (
@@ -714,12 +740,38 @@ const Home: FC<HomeProps> = () => {
                 Contacts
               </h2>
               <div className="space-y-3">
-                {/* Contacts will be populated here */}
-                <div className="bg-white rounded-lg p-4 shadow-sm border">
-                  <p className="text-gray-600 text-center">
-                    Contacts will appear here
-                  </p>
-                </div>
+                {activeUser && activeUser.length > 0 ? (
+                  activeUser.map((user: any, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        // Set this user as current chat
+                        dispatch(setCurrentUser(user));
+                        setMobileTab("chat");
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+                          <img
+                            src={user.avatar || "/profile.jpg"}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{user.name}</h3>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <p className="text-gray-600 text-center">No contacts available</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : mobileTab === "people" ? (
@@ -729,12 +781,41 @@ const Home: FC<HomeProps> = () => {
                 Active People
               </h2>
               <div className="space-y-3">
-                {/* Active people will be populated here */}
-                <div className="bg-white rounded-lg p-4 shadow-sm border">
-                  <p className="text-gray-600 text-center">
-                    Active people will appear here
-                  </p>
-                </div>
+                {activeUser && activeUser.length > 0 ? (
+                  activeUser.map((user: any, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        // Set this user as current chat
+                        dispatch(setCurrentUser(user));
+                        setMobileTab("chat");
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+                          <img
+                            src={user.avatar || "/profile.jpg"}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{user.name}</h3>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-green-600 font-medium">Online</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <p className="text-gray-600 text-center">No active people available</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : mobileTab === "calls" ? (
@@ -744,11 +825,28 @@ const Home: FC<HomeProps> = () => {
                 Call History
               </h2>
               <div className="space-y-3">
-                {/* Call history will be populated here */}
+                {/* This would show real call history from your calling service */}
                 <div className="bg-white rounded-lg p-4 shadow-sm border">
-                  <p className="text-gray-600 text-center">
-                    Call history will appear here
-                  </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-lg">📞</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">Recent Calls</h3>
+                      <p className="text-sm text-gray-500">Call history will be populated from your calling service</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-lg">✅</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">Call Features</h3>
+                      <p className="text-sm text-gray-500">Audio and video calling available</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -759,11 +857,28 @@ const Home: FC<HomeProps> = () => {
                 Groups
               </h2>
               <div className="space-y-3">
-                {/* Groups will be populated here */}
+                {/* This would show real groups from your group management */}
                 <div className="bg-white rounded-lg p-4 shadow-sm border">
-                  <p className="text-gray-600 text-center">
-                    Groups will appear here
-                  </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600 text-lg">👥</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">Group Management</h3>
+                      <p className="text-sm text-gray-500">Create and manage group chats</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 shadow-sm border">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span className="text-orange-600 text-lg">➕</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">Create Group</h3>
+                      <p className="text-sm text-gray-500">Start a new group conversation</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -774,12 +889,51 @@ const Home: FC<HomeProps> = () => {
                 Settings
               </h2>
               <div className="space-y-3">
-                {/* Settings will be populated here */}
-                <div className="bg-white rounded-lg p-4 shadow-sm border">
-                  <p className="text-gray-600 text-center">
-                    Settings will appear here
-                  </p>
-                </div>
+                {authUser ? (
+                  <>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full overflow-hidden">
+                          <img
+                            src="/profile.jpg"
+                            alt={authUser.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{authUser.name}</h3>
+                          <p className="text-sm text-gray-500">{authUser.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 text-lg">👤</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">Profile</h3>
+                          <p className="text-sm text-gray-500">Edit your profile information</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                          <span className="text-red-600 text-lg">🚪</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">Logout</h3>
+                          <p className="text-sm text-gray-500">Sign out of your account</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <p className="text-gray-600 text-center">User not authenticated</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : null}
