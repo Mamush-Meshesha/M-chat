@@ -26,7 +26,10 @@ export const authSlice = createSlice({
   initialState,
   reducers: {
     // Login actions
-    loginStart: (state) => {
+    loginStart: (
+      state,
+      _action: PayloadAction<{ email: string; password: string }>
+    ) => {
       state.isLoading = true;
       state.error = null;
       // Don't set user or isAuthenticated here - wait for success

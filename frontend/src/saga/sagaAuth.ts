@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { call, all, takeLatest, put, takeEvery } from "redux-saga/effects";
+import {
+  call,
+  all,
+  takeLatest,
+  put,
+  takeEvery,
+  select,
+} from "redux-saga/effects";
 import {
   loginStart,
   loginSuccess,
@@ -84,13 +91,26 @@ function* logoutUser() {
   }
 }
 
-function* fetchFriends() {
+function* fetchFriends(): Generator<any, void, any> {
   try {
+    // Get the current auth state to access the token
+    const authState: any = yield select((state: any) => state.auth);
+    const token = authState.user?.token;
+
+    if (!token) {
+      console.error("❌ No token available for fetchFriends");
+      yield put(fetchUserFailure("No authentication token available"));
+      return;
+    }
+
     const res: AxiosResponse = yield call(
       axios.get,
       getApiUrl("/api/users/get-friends"),
       {
-        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true, // Keep cookies as backup
       }
     );
     yield put(fetchUserSuccess(res.data));
@@ -99,8 +119,20 @@ function* fetchFriends() {
   }
 }
 
-function* sendMessageSaga(action: PayloadAction<any>) {
+function* sendMessageSaga(
+  action: PayloadAction<any>
+): Generator<any, void, any> {
   try {
+    // Get the current auth state to access the token
+    const authState: any = yield select((state: any) => state.auth);
+    const token = authState.user?.token;
+
+    if (!token) {
+      console.error("❌ No token available for sendMessage");
+      yield put(sendMessageFailure("No authentication token available"));
+      return;
+    }
+
     const res: AxiosResponse = yield call(
       axios.post,
       getApiUrl("/api/users/send-message"),
@@ -108,8 +140,9 @@ function* sendMessageSaga(action: PayloadAction<any>) {
       {
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        withCredentials: true,
+        withCredentials: true, // Keep cookies as backup
       }
     );
     yield put(sendMessageSuccess(res.data));
@@ -119,13 +152,28 @@ function* sendMessageSaga(action: PayloadAction<any>) {
   }
 }
 
-function* fetchMessageSaga(action: PayloadAction<string>) {
+function* fetchMessageSaga(
+  action: PayloadAction<string>
+): Generator<any, void, any> {
   try {
+    // Get the current auth state to access the token
+    const authState: any = yield select((state: any) => state.auth);
+    const token = authState.user?.token;
+
+    if (!token) {
+      console.error("❌ No token available for fetchMessage");
+      yield put(fetchUserFailure("No authentication token available"));
+      return;
+    }
+
     const res: AxiosResponse = yield call(
       axios.get,
       getApiUrl(`/api/users/message/${action.payload}`),
       {
-        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true, // Keep cookies as backup
       }
     );
     yield put(fetchMessageSuccess(res.data));
