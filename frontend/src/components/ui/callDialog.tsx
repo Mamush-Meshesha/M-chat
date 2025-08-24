@@ -194,6 +194,23 @@ const CallDialog: FC<CallDialogProps> = ({
         console.log("🔊 IMMEDIATE AUDIO SETUP from callback");
         remoteAudioRef.current.srcObject = stream;
 
+        // CRITICAL: Unmute the audio element and ensure tracks are enabled
+        remoteAudioRef.current.muted = false;
+        console.log("🔊 Audio element unmuted");
+
+        const audioTracks = stream.getAudioTracks();
+        audioTracks.forEach((track, index) => {
+          if (!track.enabled) {
+            console.log(`🔊 Enabling audio track ${index} (was disabled)`);
+            track.enabled = true;
+          }
+          console.log(`🔊 Audio track ${index} state:`, {
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState,
+          });
+        });
+
         // Only play if not already playing
         if (remoteAudioRef.current.paused) {
           console.log("🔊 Starting audio playback...");
@@ -212,6 +229,7 @@ const CallDialog: FC<CallDialogProps> = ({
           srcObject: !!remoteAudioRef.current.srcObject,
           readyState: remoteAudioRef.current.readyState,
           paused: remoteAudioRef.current.paused,
+          muted: remoteAudioRef.current.muted,
         });
       } else {
         console.log("🔊 Skipping audio setup:", {
@@ -445,6 +463,22 @@ const CallDialog: FC<CallDialogProps> = ({
     if (remoteAudioRef.current && remoteStream && !audioSetupComplete.current) {
       console.log("🔊 Setting remote audio stream:", remoteStream);
       remoteAudioRef.current.srcObject = remoteStream;
+
+      // CRITICAL: Unmute the audio tracks
+      const audioTracks = remoteStream.getAudioTracks();
+      audioTracks.forEach((track, index) => {
+        if (!track.enabled) {
+          console.log(
+            `🔊 Enabling audio track ${index} from useEffect (was disabled)`
+          );
+          track.enabled = true;
+        }
+        console.log(`🔊 Audio track ${index} state from useEffect:`, {
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+        });
+      });
 
       // Only play if not already playing
       if (remoteAudioRef.current.paused) {
