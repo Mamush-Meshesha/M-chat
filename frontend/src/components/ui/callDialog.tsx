@@ -192,6 +192,11 @@ const CallDialog: FC<CallDialogProps> = ({
       // IMMEDIATE audio setup - don't wait for useEffect
       if (remoteAudioRef.current && stream && !audioSetupComplete.current) {
         console.log("🔊 IMMEDIATE AUDIO SETUP from callback");
+
+        // Prevent multiple audio setups
+        audioSetupComplete.current = true;
+        console.log("🔊 Audio setup marked as complete IMMEDIATELY");
+
         remoteAudioRef.current.srcObject = stream;
 
         // CRITICAL: Unmute the audio element and ensure tracks are enabled
@@ -228,10 +233,6 @@ const CallDialog: FC<CallDialogProps> = ({
           console.log("🔊 Audio already playing, skipping play call");
         }
 
-        // Mark audio setup as complete
-        audioSetupComplete.current = true;
-        console.log("🔊 Audio setup marked as complete");
-
         console.log("🔊 Audio element updated immediately:", {
           srcObject: !!remoteAudioRef.current.srcObject,
           readyState: remoteAudioRef.current.readyState,
@@ -243,6 +244,9 @@ const CallDialog: FC<CallDialogProps> = ({
           hasRef: !!remoteAudioRef.current,
           hasStream: !!stream,
           alreadySetup: audioSetupComplete.current,
+          reason: audioSetupComplete.current
+            ? "Already setup"
+            : "Missing ref or stream",
         });
       }
 
@@ -465,13 +469,23 @@ const CallDialog: FC<CallDialogProps> = ({
       hasRemoteStream: !!remoteStream,
       remoteStreamTracks: remoteStream?.getTracks().length,
       remoteStreamAudioTracks: remoteStream?.getAudioTracks().length,
+      alreadySetup: audioSetupComplete.current,
     });
+
+    // Skip if already set up or missing elements
+    if (audioSetupComplete.current) {
+      console.log("🔊 Audio already set up, skipping useEffect");
+      return;
+    }
 
     if (remoteAudioRef.current && remoteStream && !audioSetupComplete.current) {
       console.log("🔊 Setting remote audio stream:", remoteStream);
       remoteAudioRef.current.srcObject = remoteStream;
 
-      // CRITICAL: Unmute the audio tracks
+      // CRITICAL: Unmute the audio element and ensure tracks are enabled
+      remoteAudioRef.current.muted = false;
+      console.log("🔊 Audio element unmuted");
+
       const audioTracks = remoteStream.getAudioTracks();
       audioTracks.forEach((track, index) => {
         if (!track.enabled) {
@@ -487,7 +501,6 @@ const CallDialog: FC<CallDialogProps> = ({
         });
       });
 
-      // Only play if not already playing
       if (remoteAudioRef.current.paused) {
         console.log("🔊 Starting audio playback from useEffect...");
         remoteAudioRef.current.play().catch((error) => {
@@ -499,11 +512,9 @@ const CallDialog: FC<CallDialogProps> = ({
         );
       }
 
-      // Mark audio setup as complete
       audioSetupComplete.current = true;
       console.log("🔊 Audio setup marked as complete from useEffect");
 
-      // Log audio element state
       console.log("🔊 Remote audio element state:", {
         readyState: remoteAudioRef.current.readyState,
         paused: remoteAudioRef.current.paused,
@@ -516,6 +527,9 @@ const CallDialog: FC<CallDialogProps> = ({
         hasRef: !!remoteAudioRef.current,
         hasStream: !!remoteStream,
         alreadySetup: audioSetupComplete.current,
+        reason: audioSetupComplete.current
+          ? "Already setup"
+          : "Missing ref or stream",
       });
     }
   }, [remoteStream]);
