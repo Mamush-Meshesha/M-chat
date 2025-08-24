@@ -27,6 +27,7 @@ class CallingService {
   private remoteStream: MediaStream | null = null;
   private peerConnection: RTCPeerConnection | null = null;
   private callStartTime: number | null = null;
+  private isProcessingOntrack: boolean = false; // Prevent multiple ontrack processing
 
   // Sound management for different call scenarios
   private callingSound: HTMLAudioElement | null = null;
@@ -420,12 +421,12 @@ class CallingService {
         console.log("  - Has active call:", !!this.activeCall);
         console.log(
           "  - Active call caller ID:",
-          this.activeCall?.callData?.callerId
+          this.activeCall?.callData.callerId
         );
         console.log("  - Current user ID:", this.getCurrentUserId());
         console.log(
           "  - Is caller:",
-          this.activeCall?.callData?.callerId === this.getCurrentUserId()
+          this.activeCall?.callData.callerId === this.getCurrentUserId()
         );
         return; // Don't process this event if we're not the caller
       }
@@ -470,12 +471,12 @@ class CallingService {
         console.log("  - Has active call:", !!this.activeCall);
         console.log(
           "  - Active call receiver ID:",
-          this.activeCall?.callData?.receiverId
+          this.activeCall?.callData.receiverId
         );
         console.log("  - Current user ID:", this.getCurrentUserId());
         console.log(
           "  - Is receiver:",
-          this.activeCall?.callData?.receiverId === this.getCurrentUserId()
+          this.activeCall?.callData.receiverId === this.getCurrentUserId()
         );
         return; // Don't process this event if we're not the receiver
       }
@@ -1297,14 +1298,27 @@ class CallingService {
       console.log("🎵 Track readyState:", event.track.readyState);
       console.log(
         "🎵 Current user role:",
-        this.activeCall?.callData?.callerId === this.getCurrentUserId()
+        this.activeCall?.callData.callerId === this.getCurrentUserId()
           ? "caller"
           : "receiver"
       );
       console.log("🎵 Peer connection state:", pc.connectionState);
       console.log("🎵 ICE connection state:", pc.iceConnectionState);
-      console.log("🎵 Call ID:", this.activeCall?.callData?.callId);
-      console.log("🎵 Call type:", this.activeCall?.callData?.callType);
+      console.log("🎵 Call ID:", this.activeCall?.callData.callId);
+      console.log("🎵 Call type:", this.activeCall?.callData.callType);
+
+      // AGGRESSIVE duplicate prevention - if we already have a remote stream, skip
+      if (this.remoteStream) {
+        console.log(
+          "🔄 REMOTE STREAM ALREADY EXISTS - Skipping duplicate ontrack event"
+        );
+        console.log("🔄 Existing stream ID:", this.remoteStream.id);
+        console.log("🔄 New stream ID:", event.streams[0]?.id);
+        console.log(
+          "🔄 This prevents audio interruption from multiple ontrack events"
+        );
+        return; // Exit early - no more processing
+      }
 
       // Check if this is a duplicate track event
       if (this.remoteStream && event.streams[0]) {
@@ -1517,10 +1531,10 @@ class CallingService {
           },
           activeCall: {
             exists: !!this.activeCall,
-            callType: this.activeCall?.callData?.callType,
-            status: this.activeCall?.callData?.status,
-            callerId: this.activeCall?.callData?.callerId,
-            receiverId: this.activeCall?.callData?.receiverId,
+            callType: this.activeCall?.callData.callType,
+            status: this.activeCall?.callData.status,
+            callerId: this.activeCall?.callData.callerId,
+            receiverId: this.activeCall?.callData.receiverId,
           },
           remoteStream: {
             exists: !!this.remoteStream,
@@ -1549,7 +1563,7 @@ class CallingService {
         // Alert on critical issues
         if (
           videoTracks.length === 0 &&
-          this.activeCall?.callData?.callType === "video"
+          this.activeCall?.callData.callType === "video"
         ) {
           console.log("🚨 CRITICAL: Video tracks disappeared on video call!");
           console.log("🚨 Full state dump:", {
@@ -1817,7 +1831,7 @@ class CallingService {
 
         this.socket.emit("iceCandidate", {
           candidate: candidate,
-          receiverId: this.activeCall.callData.receiverId,
+          receiverId: this.activeCall.receiverId,
           senderId: this.getCurrentUserId(),
         });
 
@@ -2035,7 +2049,7 @@ class CallingService {
       // Send offer to the receiver
       const offerData = {
         offer,
-        receiverId: this.activeCall.callData.receiverId,
+        receiverId: this.activeCall.receiverId,
         senderId: this.getCurrentUserId(), // Add sender ID for answer routing
       };
       console.log("🔄 Sending offer data:", offerData);
@@ -2047,13 +2061,10 @@ class CallingService {
         message: "Test event from caller",
         timestamp: Date.now(),
         callerId: this.getCurrentUserId(),
-        receiverId: this.activeCall.callData.receiverId,
+        receiverId: this.activeCall.receiverId,
       });
 
-      console.log(
-        "✅ Offer sent to receiver:",
-        this.activeCall.callData.receiverId
-      );
+      console.log("✅ Offer sent to receiver:", this.activeCall.receiverId);
     } catch (error) {
       console.error("❌ Error creating and sending offer:", error);
     }
