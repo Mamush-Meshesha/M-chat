@@ -191,10 +191,15 @@ const CallDialog: FC<CallDialogProps> = ({
         console.log("🔊 IMMEDIATE AUDIO SETUP from callback");
         remoteAudioRef.current.srcObject = stream;
 
-        // Ensure audio plays immediately
-        remoteAudioRef.current.play().catch((error) => {
-          console.error("❌ Immediate audio play failed:", error);
-        });
+        // Only play if not already playing
+        if (remoteAudioRef.current.paused) {
+          console.log("🔊 Starting audio playback...");
+          remoteAudioRef.current.play().catch((error) => {
+            console.error("❌ Immediate audio play failed:", error);
+          });
+        } else {
+          console.log("🔊 Audio already playing, skipping play call");
+        }
 
         console.log("🔊 Audio element updated immediately:", {
           srcObject: !!remoteAudioRef.current.srcObject,
@@ -433,10 +438,17 @@ const CallDialog: FC<CallDialogProps> = ({
       console.log("🔊 Setting remote audio stream:", remoteStream);
       remoteAudioRef.current.srcObject = remoteStream;
 
-      // Ensure audio plays
-      remoteAudioRef.current.play().catch((error) => {
-        console.error("❌ Remote audio play failed:", error);
-      });
+      // Only play if not already playing
+      if (remoteAudioRef.current.paused) {
+        console.log("🔊 Starting audio playback from useEffect...");
+        remoteAudioRef.current.play().catch((error) => {
+          console.error("❌ Remote audio play failed:", error);
+        });
+      } else {
+        console.log(
+          "🔊 Audio already playing from useEffect, skipping play call"
+        );
+      }
 
       // Log audio element state
       console.log("🔊 Remote audio element state:", {
