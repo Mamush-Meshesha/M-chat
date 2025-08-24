@@ -1297,29 +1297,43 @@ class CallingService {
       console.log("🎵 Track readyState:", event.track.readyState);
       console.log(
         "🎵 Current user role:",
-        this.activeCall ? "caller" : "receiver"
+        this.activeCall?.callData?.callerId === this.getCurrentUserId()
+          ? "caller"
+          : "receiver"
       );
       console.log("🎵 Peer connection state:", pc.connectionState);
       console.log("🎵 ICE connection state:", pc.iceConnectionState);
       console.log("🎵 Call ID:", this.activeCall?.callData?.callId);
       console.log("🎵 Call type:", this.activeCall?.callData?.callType);
 
-      // Simple audio debugging
-      console.log("🔊 AUDIO DEBUG:");
-      console.log("🔊 Has remote stream:", !!event.streams[0]);
-      console.log(
-        "🔊 Stream track count:",
-        event.streams[0]?.getTracks().length
-      );
-      console.log(
-        "🔊 Audio tracks:",
-        event.streams[0]?.getAudioTracks().length
-      );
-      console.log(
-        "🔊 Video tracks:",
-        event.streams[0]?.getVideoTracks().length
-      );
+      // Check if this is a duplicate track event
+      if (this.remoteStream && event.streams[0]) {
+        const existingStream = this.remoteStream;
+        const newStream = event.streams[0];
 
+        // Check if streams have the same tracks
+        const existingTracks = existingStream.getTracks();
+        const newTracks = newStream.getTracks();
+
+        if (existingTracks.length === newTracks.length) {
+          const isDuplicate = existingTracks.every((existingTrack, index) => {
+            const newTrack = newTracks[index];
+            return (
+              existingTrack.id === newTrack.id &&
+              existingTrack.kind === newTrack.kind
+            );
+          });
+
+          if (isDuplicate) {
+            console.log(
+              "🔄 Duplicate ontrack event detected, skipping stream update"
+            );
+            return;
+          }
+        }
+      }
+
+      // Set remote stream
       this.remoteStream = event.streams[0];
       console.log("🎵 Remote stream set:", this.remoteStream);
       console.log(

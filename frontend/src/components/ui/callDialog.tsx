@@ -193,9 +193,32 @@ const CallDialog: FC<CallDialogProps> = ({
       if (remoteAudioRef.current && stream && !audioSetupComplete.current) {
         console.log("🔊 IMMEDIATE AUDIO SETUP from callback");
 
+        // Detect if this is a different device call
+        const audioTracks = stream.getAudioTracks();
+        const hasMutedTracks = audioTracks.some((track) => track.muted);
+        const isDifferentDeviceCall = hasMutedTracks;
+
+        console.log("🔍 DEVICE CALL ANALYSIS:", {
+          totalTracks: audioTracks.length,
+          hasMutedTracks,
+          isDifferentDeviceCall,
+          callType: isDifferentDeviceCall
+            ? "Different Device (TURN relay)"
+            : "Same Device (Direct)",
+        });
+
         // Prevent multiple audio setups
         audioSetupComplete.current = true;
         console.log("🔊 Audio setup marked as complete IMMEDIATELY");
+
+        // Check if this is a duplicate stream (same ID)
+        if (
+          remoteAudioRef.current.srcObject &&
+          (remoteAudioRef.current.srcObject as MediaStream).id === stream.id
+        ) {
+          console.log("🔊 Duplicate stream detected, skipping audio setup");
+          return;
+        }
 
         remoteAudioRef.current.srcObject = stream;
 
@@ -210,17 +233,52 @@ const CallDialog: FC<CallDialogProps> = ({
 
         console.log("📱 Mobile audio optimizations applied");
 
-        const audioTracks = stream.getAudioTracks();
         audioTracks.forEach((track, index) => {
           if (!track.enabled) {
             console.log(`🔊 Enabling audio track ${index} (was disabled)`);
             track.enabled = true;
           }
+
+          // Log track state for debugging
           console.log(`🔊 Audio track ${index} state:`, {
             enabled: track.enabled,
-            muted: track.muted,
+            muted: track.muted, // This is read-only!
             readyState: track.readyState,
           });
+
+          // Handle muted tracks for different devices
+          if (track.muted) {
+            console.warn(
+              `⚠️ Audio track ${index} is muted (read-only property)`
+            );
+            console.warn(
+              `⚠️ This is NORMAL for different device calls (security feature)`
+            );
+            console.warn(
+              `⚠️ Audio should still work through the HTML audio element`
+            );
+
+            // For different devices, we need to ensure the audio element is properly configured
+            if (remoteAudioRef.current) {
+              // Force audio element to be unmuted and ready
+              remoteAudioRef.current.muted = false;
+              remoteAudioRef.current.volume = 1.0;
+              remoteAudioRef.current.playbackRate = 1.0;
+
+              console.log(
+                "🔊 Audio element configured for muted track handling"
+              );
+              console.log("🔊 Element state:", {
+                muted: remoteAudioRef.current.muted,
+                volume: remoteAudioRef.current.volume,
+                readyState: remoteAudioRef.current.readyState,
+              });
+            }
+          } else {
+            console.log(
+              `✅ Audio track ${index} is unmuted (same device or trusted connection)`
+            );
+          }
         });
 
         // Only play if not already playing
@@ -233,11 +291,50 @@ const CallDialog: FC<CallDialogProps> = ({
           console.log("🔊 Audio already playing, skipping play call");
         }
 
+        // Special handling for different device calls
+        if (isDifferentDeviceCall) {
+          console.log(
+            "🌐 DIFFERENT DEVICE CALL DETECTED - Special handling applied"
+          );
+          console.log(
+            "🌐 Audio tracks are muted (security feature) but audio element is configured"
+          );
+          console.log(
+            "🌐 Audio should work through the HTML audio element despite muted tracks"
+          );
+
+          // Additional configuration for different device calls
+          if (remoteAudioRef.current) {
+            // Ensure audio element is fully configured
+            remoteAudioRef.current.muted = false;
+            remoteAudioRef.current.volume = 1.0;
+            remoteAudioRef.current.playbackRate = 1.0;
+
+            // Force a small delay then retry play for different devices
+            setTimeout(() => {
+              if (remoteAudioRef.current && remoteAudioRef.current.paused) {
+                console.log(
+                  "🌐 Retrying audio playback for different device call..."
+                );
+                remoteAudioRef.current.play().catch((error) => {
+                  console.error(
+                    "❌ Retry audio play failed for different device:",
+                    error
+                  );
+                });
+              }
+            }, 500);
+          }
+        } else {
+          console.log("🔗 SAME DEVICE CALL - Standard audio handling applied");
+        }
+
         console.log("🔊 Audio element updated immediately:", {
           srcObject: !!remoteAudioRef.current.srcObject,
           readyState: remoteAudioRef.current.readyState,
           paused: remoteAudioRef.current.paused,
           muted: remoteAudioRef.current.muted,
+          isDifferentDeviceCall,
         });
       } else {
         console.log("🔊 Skipping audio setup:", {
