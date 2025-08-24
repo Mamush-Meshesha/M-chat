@@ -24,7 +24,7 @@ const Dashboardbottom: FC<DashboardbottomProps> = ({ socket }) => {
   const _id = authUser?._id || "";
 
   const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setNewMessage(e.target.value));
@@ -55,7 +55,7 @@ const Dashboardbottom: FC<DashboardbottomProps> = ({ socket }) => {
             receiverId: currentUserChat._id,
           });
         }
-      }, 1000);
+      }, 1000) as unknown as number;
     }
   };
 

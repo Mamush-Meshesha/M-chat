@@ -34,7 +34,7 @@ class CallingService {
   private currentPlayingSound: HTMLAudioElement | null = null;
   private pendingOffer: any = null; // Queue for offers received before peer connection is ready
   private sentIceCandidates: Set<string> = new Set(); // Track sent ICE candidates to prevent duplicates
-  private trackMonitorInterval: NodeJS.Timeout | null = null;
+  private trackMonitorInterval: number | null = null;
   private eventCounts = { callAccepted: 0, callConnected: 0 };
   private screenShareStream: MediaStream | null = null;
   private screenShareTrack: MediaStreamTrack | null = null;
@@ -1398,7 +1398,7 @@ class CallingService {
     }, 1000); // Check every second for more granular monitoring
 
     // Store the interval ID so we can clear it later
-    this.trackMonitorInterval = comprehensiveMonitor;
+    this.trackMonitorInterval = comprehensiveMonitor as unknown as number;
 
     console.log("✅ Peer connection created with event handlers");
     return pc;

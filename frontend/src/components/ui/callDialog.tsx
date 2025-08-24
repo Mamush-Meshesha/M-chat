@@ -72,7 +72,7 @@ const CallDialog: FC<CallDialogProps> = ({
     );
   }, [remoteStream]);
 
-  const durationRef = useRef<NodeJS.Timeout | null>(null);
+  const durationRef = useRef<number | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localAudioRef = useRef<HTMLAudioElement>(null);
@@ -103,7 +103,7 @@ const CallDialog: FC<CallDialogProps> = ({
           console.log(`🕐 Duration: ${newDuration} seconds`);
           return newDuration;
         });
-      }, 1000);
+      }, 1000) as unknown as number;
     } else {
       if (durationRef.current) {
         console.log("🕐 Stopping duration timer...");
