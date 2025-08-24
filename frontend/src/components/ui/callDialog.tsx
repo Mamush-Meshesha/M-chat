@@ -186,6 +186,28 @@ const CallDialog: FC<CallDialogProps> = ({
       );
       setRemoteStream(stream);
 
+      // IMMEDIATE audio setup - don't wait for useEffect
+      if (remoteAudioRef.current && stream) {
+        console.log("🔊 IMMEDIATE AUDIO SETUP from callback");
+        remoteAudioRef.current.srcObject = stream;
+
+        // Ensure audio plays immediately
+        remoteAudioRef.current.play().catch((error) => {
+          console.error("❌ Immediate audio play failed:", error);
+        });
+
+        console.log("🔊 Audio element updated immediately:", {
+          srcObject: !!remoteAudioRef.current.srcObject,
+          readyState: remoteAudioRef.current.readyState,
+          paused: remoteAudioRef.current.paused,
+        });
+      } else {
+        console.log("❌ Cannot set audio immediately:", {
+          hasRef: !!remoteAudioRef.current,
+          hasStream: !!stream,
+        });
+      }
+
       // Always handle remote stream regardless of call type
       console.log("🔄 Processing remote stream for call type:", callType);
 
@@ -400,6 +422,13 @@ const CallDialog: FC<CallDialogProps> = ({
 
   // Set up remote audio stream
   useEffect(() => {
+    console.log("🔊 REMOTE STREAM EFFECT TRIGGERED:", {
+      hasRemoteAudioRef: !!remoteAudioRef.current,
+      hasRemoteStream: !!remoteStream,
+      remoteStreamTracks: remoteStream?.getTracks().length,
+      remoteStreamAudioTracks: remoteStream?.getAudioTracks().length,
+    });
+
     if (remoteAudioRef.current && remoteStream) {
       console.log("🔊 Setting remote audio stream:", remoteStream);
       remoteAudioRef.current.srcObject = remoteStream;
@@ -416,6 +445,11 @@ const CallDialog: FC<CallDialogProps> = ({
         muted: remoteAudioRef.current.muted,
         volume: remoteAudioRef.current.volume,
         srcObject: !!remoteAudioRef.current.srcObject,
+      });
+    } else {
+      console.log("❌ Cannot set remote audio:", {
+        hasRef: !!remoteAudioRef.current,
+        hasStream: !!remoteStream,
       });
     }
   }, [remoteStream]);

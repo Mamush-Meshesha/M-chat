@@ -1277,6 +1277,23 @@ class CallingService {
         this.remoteStream?.getTracks().length
       );
 
+      // IMMEDIATE audio check
+      console.log("🔊 IMMEDIATE AUDIO CHECK:");
+      if (this.remoteStream) {
+        const audioTracks = this.remoteStream.getAudioTracks();
+        console.log("🔊 Audio tracks found:", audioTracks.length);
+        audioTracks.forEach((track, i) => {
+          console.log(`🔊 Audio track ${i}:`, {
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState,
+            id: track.id,
+          });
+        });
+      } else {
+        console.log("❌ No remote stream set!");
+      }
+
       // Log all tracks in the received stream
       if (event.streams && event.streams.length > 0) {
         const stream = event.streams[0];
