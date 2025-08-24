@@ -5,7 +5,6 @@ import Dashboardbottom from "../components/ui/dashboardbottom";
 import Header from "../components/header";
 import Notification from "../components/ui/notification";
 import CallDialog from "../components/ui/callDialog";
-import TestNotification from "../components/ui/testNotification";
 import { FaCheck } from "react-icons/fa6";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
@@ -632,79 +631,6 @@ const Home: FC<HomeProps> = () => {
           />
         </div>
       ))}
-
-      {/* Test Component for Debugging */}
-      <TestNotification />
-
-      {/* Test Buttons */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        <button
-          onClick={() => {
-            console.log("🧪 Testing ringtone...");
-            callingService.testSounds();
-          }}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors w-full"
-          title="Test the phone ringtone"
-        >
-          🔔 Test Ringtone
-        </button>
-
-        <button
-          onClick={() => {
-            console.log("🧪 Testing microphone...");
-            navigator.mediaDevices
-              .getUserMedia({ audio: true })
-              .then((stream) => {
-                console.log("✅ Microphone access granted:", stream);
-                console.log(
-                  "🎵 Audio tracks:",
-                  stream.getAudioTracks().map((t) => ({
-                    kind: t.kind,
-                    enabled: t.enabled,
-                    muted: t.muted,
-                    readyState: t.readyState,
-                  }))
-                );
-
-                // Test if we can play audio
-                const audio = new Audio();
-                audio.srcObject = stream;
-                audio
-                  .play()
-                  .then(() => {
-                    console.log("✅ Audio playback test successful");
-                    setTimeout(() => {
-                      audio.pause();
-                      stream.getTracks().forEach((track) => track.stop());
-                      console.log("🧪 Audio test completed");
-                    }, 2000);
-                  })
-                  .catch((error) => {
-                    console.error("❌ Audio playback test failed:", error);
-                    stream.getTracks().forEach((track) => track.stop());
-                  });
-              })
-              .catch((error) => {
-                console.error("❌ Microphone access denied:", error);
-              });
-          }}
-          className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-green-600 transition-colors w-full"
-          title="Test microphone access and audio playback"
-        >
-          🎤 Test Mic & Audio
-        </button>
-
-        <button
-          onClick={() => {
-            console.log("🧪 Testing socket connection...");
-            callingService.testSocketConnection();
-          }}
-          className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-purple-600 transition-colors w-full"
-          title="Test socket connection and event listeners"
-        >
-          🔌 Test Socket
-        </button>
-      </div>
     </div>
   );
 };

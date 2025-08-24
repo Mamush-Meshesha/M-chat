@@ -50,7 +50,6 @@ const Dashboardheader: FC<DashboardheaderProps> = ({
     console.log("Current user chat:", currentUserChat);
     console.log("Calling service socket:", callingService.socketStatus);
 
-    // Test actual socket connection
     if (socket) {
       console.log("Socket connected:", socket.connected);
       console.log("Socket ID:", socket.id);
