@@ -17,6 +17,7 @@ import {
   markMessagesAsRead,
   setCurrentUser,
 } from "../slice/userSlice";
+import { logout } from "../slice/authSlice";
 import callingService from "../services/callingService";
 import socketManager from "../services/socketManager";
 
@@ -60,6 +61,7 @@ const Home: FC<HomeProps> = () => {
   const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState("chat"); // Mobile navigation state
+  const isLoggingOut = useRef(false);
   const socket = useRef<Socket | null>(null);
 
   // Initialize socket connection
@@ -719,7 +721,9 @@ const Home: FC<HomeProps> = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{user.name}</h3>
+                          <h3 className="font-medium text-gray-900">
+                            {user.name}
+                          </h3>
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -728,7 +732,9 @@ const Home: FC<HomeProps> = () => {
                   ))
                 ) : (
                   <div className="bg-white rounded-lg p-4 shadow-sm border">
-                    <p className="text-gray-600 text-center">No recent chats available</p>
+                    <p className="text-gray-600 text-center">
+                      No recent chats available
+                    </p>
                   </div>
                 )}
               </div>
@@ -760,7 +766,9 @@ const Home: FC<HomeProps> = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{user.name}</h3>
+                          <h3 className="font-medium text-gray-900">
+                            {user.name}
+                          </h3>
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -769,7 +777,9 @@ const Home: FC<HomeProps> = () => {
                   ))
                 ) : (
                   <div className="bg-white rounded-lg p-4 shadow-sm border">
-                    <p className="text-gray-600 text-center">No contacts available</p>
+                    <p className="text-gray-600 text-center">
+                      No contacts available
+                    </p>
                   </div>
                 )}
               </div>
@@ -801,19 +811,25 @@ const Home: FC<HomeProps> = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{user.name}</h3>
+                          <h3 className="font-medium text-gray-900">
+                            {user.name}
+                          </h3>
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-xs text-green-600 font-medium">Online</span>
+                          <span className="text-xs text-green-600 font-medium">
+                            Online
+                          </span>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="bg-white rounded-lg p-4 shadow-sm border">
-                    <p className="text-gray-600 text-center">No active people available</p>
+                    <p className="text-gray-600 text-center">
+                      No active people available
+                    </p>
                   </div>
                 )}
               </div>
@@ -832,8 +848,12 @@ const Home: FC<HomeProps> = () => {
                       <span className="text-blue-600 text-lg">📞</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">Recent Calls</h3>
-                      <p className="text-sm text-gray-500">Call history will be populated from your calling service</p>
+                      <h3 className="font-medium text-gray-900">
+                        Recent Calls
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Call history will be populated from your calling service
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -843,8 +863,12 @@ const Home: FC<HomeProps> = () => {
                       <span className="text-green-600 text-lg">✅</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">Call Features</h3>
-                      <p className="text-sm text-gray-500">Audio and video calling available</p>
+                      <h3 className="font-medium text-gray-900">
+                        Call Features
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Audio and video calling available
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -864,8 +888,12 @@ const Home: FC<HomeProps> = () => {
                       <span className="text-purple-600 text-lg">👥</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">Group Management</h3>
-                      <p className="text-sm text-gray-500">Create and manage group chats</p>
+                      <h3 className="font-medium text-gray-900">
+                        Group Management
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Create and manage group chats
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -875,8 +903,12 @@ const Home: FC<HomeProps> = () => {
                       <span className="text-orange-600 text-lg">➕</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">Create Group</h3>
-                      <p className="text-sm text-gray-500">Start a new group conversation</p>
+                      <h3 className="font-medium text-gray-900">
+                        Create Group
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Start a new group conversation
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -901,8 +933,12 @@ const Home: FC<HomeProps> = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{authUser.name}</h3>
-                          <p className="text-sm text-gray-500">{authUser.email}</p>
+                          <h3 className="font-medium text-gray-900">
+                            {authUser.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {authUser.email}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -913,25 +949,41 @@ const Home: FC<HomeProps> = () => {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">Profile</h3>
-                          <p className="text-sm text-gray-500">Edit your profile information</p>
+                          <p className="text-sm text-gray-500">
+                            Edit your profile information
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <div
+                      className="bg-white rounded-lg p-4 shadow-sm border cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => {
+                        if (isLoggingOut.current) return; // Prevent multiple calls
+                        isLoggingOut.current = true;
+
+                        // Cleanup before logout
+                        socketManager.disconnect();
+                        dispatch(logout());
+                      }}
+                    >
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                           <span className="text-red-600 text-lg">🚪</span>
                         </div>
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">Logout</h3>
-                          <p className="text-sm text-gray-500">Sign out of your account</p>
+                          <p className="text-sm text-gray-500">
+                            Sign out of your account
+                          </p>
                         </div>
                       </div>
                     </div>
                   </>
                 ) : (
                   <div className="bg-white rounded-lg p-4 shadow-sm border">
-                    <p className="text-gray-600 text-center">User not authenticated</p>
+                    <p className="text-gray-600 text-center">
+                      User not authenticated
+                    </p>
                   </div>
                 )}
               </div>

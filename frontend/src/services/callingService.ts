@@ -39,6 +39,7 @@ class CallingService {
   private screenShareStream: MediaStream | null = null;
   private screenShareTrack: MediaStreamTrack | null = null;
   private isScreenSharing = false;
+  private connectionQualityInterval: number | null = null;
 
   constructor() {
     console.log("🚀 CallingService constructor called");
@@ -1149,7 +1150,28 @@ class CallingService {
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:19302" },
+        // TURN servers for relay when direct connection fails
+        {
+          urls: "turn:openrelay.metered.ca:80",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:openrelay.metered.ca:443",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+        {
+          urls: "turn:openrelay.metered.ca:443?transport=tcp",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
       ],
+      iceCandidatePoolSize: 10,
+      iceTransportPolicy: "all" as RTCIceTransportPolicy, // Allow both UDP and TCP
     };
 
     console.log("🔄 Creating peer connection with config:", configuration);
@@ -1167,6 +1189,23 @@ class CallingService {
 
     pc.addEventListener("iceconnectionstatechange", () => {
       console.log("🧊 ICE CONNECTION STATE CHANGE:", pc.iceConnectionState);
+
+      // Log detailed ICE connection information for debugging
+      if (pc.iceConnectionState === "failed") {
+        console.error(
+          "❌ ICE connection failed - this often happens with long-distance calls"
+        );
+        console.error(
+          "❌ Possible causes: firewall, NAT, or network restrictions"
+        );
+        console.error("❌ TURN servers should help with relay");
+      } else if (pc.iceConnectionState === "disconnected") {
+        console.warn(
+          "⚠️ ICE connection disconnected - connection may be unstable"
+        );
+      } else if (pc.iceConnectionState === "connected") {
+        console.log("✅ ICE connection established successfully");
+      }
     });
 
     pc.addEventListener("signalingstatechange", () => {
@@ -1311,6 +1350,9 @@ class CallingService {
       }
 
       this.onRemoteStream?.(this.remoteStream);
+
+      // Start monitoring connection quality for debugging long-distance calls
+      this.startConnectionQualityMonitoring(pc);
     };
 
     // Add connection state change logging
@@ -1920,6 +1962,13 @@ class CallingService {
     this.stopRingtone();
     this.stopCallRingtone();
 
+    // Stop connection quality monitoring
+    if (this.connectionQualityInterval) {
+      clearInterval(this.connectionQualityInterval);
+      this.connectionQualityInterval = null;
+      console.log("🔍 Connection quality monitoring stopped");
+    }
+
     console.log("✅ Call resources cleaned up");
   }
 
@@ -2143,6 +2192,61 @@ class CallingService {
 
   public getSocket() {
     return this.socket;
+  }
+
+  // Start monitoring connection quality for debugging long-distance calls
+  private startConnectionQualityMonitoring(pc: RTCPeerConnection) {
+    if (!pc) return;
+
+    console.log(
+      "🔍 Starting connection quality monitoring for long-distance calls..."
+    );
+
+    // Monitor connection stats every 2 seconds
+    const monitorInterval = setInterval(async () => {
+      try {
+        const stats = await pc.getStats();
+        let hasAudio = false;
+        let hasVideo = false;
+        let audioPacketsLost = 0;
+        let videoPacketsLost = 0;
+
+        stats.forEach((report) => {
+          if (report.type === "inbound-rtp" && report.mediaType === "audio") {
+            hasAudio = true;
+            audioPacketsLost = report.packetsLost || 0;
+          }
+          if (report.type === "inbound-rtp" && report.mediaType === "video") {
+            hasVideo = true;
+            videoPacketsLost = report.packetsLost || 0;
+          }
+        });
+
+        console.log("📊 Connection Quality Stats:", {
+          hasAudio,
+          hasVideo,
+          audioPacketsLost,
+          videoPacketsLost,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Stop monitoring if connection is closed
+        if (
+          pc.connectionState === "closed" ||
+          pc.connectionState === "failed"
+        ) {
+          clearInterval(monitorInterval);
+          console.log("🔍 Connection quality monitoring stopped");
+        }
+      } catch (error) {
+        console.error("❌ Error getting connection stats:", error);
+      }
+    }, 2000);
+
+    // Store the interval ID for cleanup
+    this.connectionQualityInterval = monitorInterval as unknown as number;
   }
 }
 

@@ -51,6 +51,8 @@ const CallDialog: FC<CallDialogProps> = ({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [remoteScreenShareStream, setRemoteScreenShareStream] =
     useState<MediaStream | null>(null);
+  const [connectionStatus, setConnectionStatus] =
+    useState<string>("Connecting...");
 
   // Get the actual call type from the calling service or fallback to prop
   const actualCallType = useMemo(() => {
@@ -98,26 +100,39 @@ const CallDialog: FC<CallDialogProps> = ({
     if (isCallActive) {
       console.log("🕐 Starting duration timer...");
       durationRef.current = setInterval(() => {
-        setCallDuration((prev) => {
-          const newDuration = prev + 1;
-          console.log(`🕐 Duration: ${newDuration} seconds`);
-          return newDuration;
-        });
+        setCallDuration((prev) => prev + 1);
       }, 1000) as unknown as number;
-    } else {
-      if (durationRef.current) {
-        console.log("🕐 Stopping duration timer...");
-        clearInterval(durationRef.current);
-        durationRef.current = null;
-      }
     }
 
     return () => {
       if (durationRef.current) {
         clearInterval(durationRef.current);
+        durationRef.current = null;
       }
     };
   }, [isCallActive]);
+
+  // Monitor connection status for debugging long-distance calls
+  useEffect(() => {
+    if (isCallActive && callData) {
+      const checkConnectionStatus = () => {
+        const socket = callingService.getSocket();
+        if (socket) {
+          setConnectionStatus(
+            `Socket: ${socket.connected ? "Connected" : "Disconnected"}`
+          );
+        }
+      };
+
+      // Check immediately
+      checkConnectionStatus();
+
+      // Check every 5 seconds
+      const statusInterval = setInterval(checkConnectionStatus, 5000);
+
+      return () => clearInterval(statusInterval);
+    }
+  }, [isCallActive, callData]);
 
   // Setup calling service callbacks
   useEffect(() => {
@@ -806,6 +821,11 @@ const CallDialog: FC<CallDialogProps> = ({
               ? "Connecting..."
               : "Calling..."}
           </p>
+
+          {/* Connection Status for debugging long-distance calls */}
+          {isCallActive && (
+            <p className="text-xs text-gray-500 mt-1">{connectionStatus}</p>
+          )}
           {isCallActive && remoteStream && (
             <p className="text-green-600 text-sm mt-1">
               {isActuallyVideoCall
