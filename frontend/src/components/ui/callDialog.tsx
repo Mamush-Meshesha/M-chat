@@ -53,6 +53,7 @@ const CallDialog: FC<CallDialogProps> = ({
     useState<MediaStream | null>(null);
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Connecting...");
+  const audioSetupComplete = useRef(false);
 
   // Get the actual call type from the calling service or fallback to prop
   const actualCallType = useMemo(() => {
@@ -149,19 +150,21 @@ const CallDialog: FC<CallDialogProps> = ({
     };
 
     callingService.onCallEnded = (data) => {
-      console.log("Call ended:", data);
+      console.log("🎵 CallDialog: Call ended:", data);
       setIsCallActive(false);
-      setIsConnecting(false);
       setCallDuration(0);
       setLocalStream(null);
       setRemoteStream(null);
+      setRemoteScreenShareStream(null);
+      setIsScreenSharing(false);
 
-      // Call the callback to refresh call history
+      // Reset audio setup flag for next call
+      audioSetupComplete.current = false;
+      console.log("🔊 Audio setup flag reset for next call");
+
       if (onCallEnded) {
         onCallEnded();
       }
-
-      onClose();
     };
 
     callingService.onCallFailed = (data) => {
@@ -187,7 +190,7 @@ const CallDialog: FC<CallDialogProps> = ({
       setRemoteStream(stream);
 
       // IMMEDIATE audio setup - don't wait for useEffect
-      if (remoteAudioRef.current && stream) {
+      if (remoteAudioRef.current && stream && !audioSetupComplete.current) {
         console.log("🔊 IMMEDIATE AUDIO SETUP from callback");
         remoteAudioRef.current.srcObject = stream;
 
@@ -201,15 +204,20 @@ const CallDialog: FC<CallDialogProps> = ({
           console.log("🔊 Audio already playing, skipping play call");
         }
 
+        // Mark audio setup as complete
+        audioSetupComplete.current = true;
+        console.log("🔊 Audio setup marked as complete");
+
         console.log("🔊 Audio element updated immediately:", {
           srcObject: !!remoteAudioRef.current.srcObject,
           readyState: remoteAudioRef.current.readyState,
           paused: remoteAudioRef.current.paused,
         });
       } else {
-        console.log("❌ Cannot set audio immediately:", {
+        console.log("🔊 Skipping audio setup:", {
           hasRef: !!remoteAudioRef.current,
           hasStream: !!stream,
+          alreadySetup: audioSetupComplete.current,
         });
       }
 
@@ -434,7 +442,7 @@ const CallDialog: FC<CallDialogProps> = ({
       remoteStreamAudioTracks: remoteStream?.getAudioTracks().length,
     });
 
-    if (remoteAudioRef.current && remoteStream) {
+    if (remoteAudioRef.current && remoteStream && !audioSetupComplete.current) {
       console.log("🔊 Setting remote audio stream:", remoteStream);
       remoteAudioRef.current.srcObject = remoteStream;
 
@@ -450,6 +458,10 @@ const CallDialog: FC<CallDialogProps> = ({
         );
       }
 
+      // Mark audio setup as complete
+      audioSetupComplete.current = true;
+      console.log("🔊 Audio setup marked as complete from useEffect");
+
       // Log audio element state
       console.log("🔊 Remote audio element state:", {
         readyState: remoteAudioRef.current.readyState,
@@ -459,9 +471,10 @@ const CallDialog: FC<CallDialogProps> = ({
         srcObject: !!remoteAudioRef.current.srcObject,
       });
     } else {
-      console.log("❌ Cannot set remote audio:", {
+      console.log("🔊 Skipping useEffect audio setup:", {
         hasRef: !!remoteAudioRef.current,
         hasStream: !!remoteStream,
+        alreadySetup: audioSetupComplete.current,
       });
     }
   }, [remoteStream]);
