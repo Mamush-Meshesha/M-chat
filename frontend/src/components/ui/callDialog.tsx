@@ -398,6 +398,28 @@ const CallDialog: FC<CallDialogProps> = ({
     }
   }, [remoteStream]);
 
+  // Set up remote audio stream
+  useEffect(() => {
+    if (remoteAudioRef.current && remoteStream) {
+      console.log("🔊 Setting remote audio stream:", remoteStream);
+      remoteAudioRef.current.srcObject = remoteStream;
+
+      // Ensure audio plays
+      remoteAudioRef.current.play().catch((error) => {
+        console.error("❌ Remote audio play failed:", error);
+      });
+
+      // Log audio element state
+      console.log("🔊 Remote audio element state:", {
+        readyState: remoteAudioRef.current.readyState,
+        paused: remoteAudioRef.current.paused,
+        muted: remoteAudioRef.current.muted,
+        volume: remoteAudioRef.current.volume,
+        srcObject: !!remoteAudioRef.current.srcObject,
+      });
+    }
+  }, [remoteStream]);
+
   // Update audio elements when streams change
   useEffect(() => {
     if (localAudioRef.current && localStream) {

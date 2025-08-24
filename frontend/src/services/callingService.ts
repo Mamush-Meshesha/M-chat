@@ -1254,6 +1254,29 @@ class CallingService {
       console.log("🎵 Call ID:", this.activeCall?.callData?.callId);
       console.log("🎵 Call type:", this.activeCall?.callData?.callType);
 
+      // Simple audio debugging
+      console.log("🔊 AUDIO DEBUG:");
+      console.log("🔊 Has remote stream:", !!event.streams[0]);
+      console.log(
+        "🔊 Stream track count:",
+        event.streams[0]?.getTracks().length
+      );
+      console.log(
+        "🔊 Audio tracks:",
+        event.streams[0]?.getAudioTracks().length
+      );
+      console.log(
+        "🔊 Video tracks:",
+        event.streams[0]?.getVideoTracks().length
+      );
+
+      this.remoteStream = event.streams[0];
+      console.log("🎵 Remote stream set:", this.remoteStream);
+      console.log(
+        "🎵 Remote stream tracks:",
+        this.remoteStream?.getTracks().length
+      );
+
       // Log all tracks in the received stream
       if (event.streams && event.streams.length > 0) {
         const stream = event.streams[0];
@@ -1288,19 +1311,6 @@ class CallingService {
           });
         });
       }
-
-      this.remoteStream = event.streams[0];
-      console.log("🎵 Remote stream set:", this.remoteStream);
-      console.log(
-        "🎵 Remote stream tracks:",
-        this.remoteStream?.getTracks().map((t) => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          muted: t.muted,
-          readyState: t.readyState,
-          label: t.label,
-        }))
-      );
 
       // Check if this is a screen share track
       const trackLabel = event.track.label || "";
@@ -1365,6 +1375,26 @@ class CallingService {
 
       // Start monitoring connection quality for debugging long-distance calls
       this.startConnectionQualityMonitoring(pc);
+
+      // Simple check: is the remote stream actually working?
+      setTimeout(() => {
+        if (this.remoteStream) {
+          const audioTracks = this.remoteStream.getAudioTracks();
+          console.log("🔊 AFTER 2 SECONDS - AUDIO CHECK:");
+          console.log("🔊 Remote stream exists:", !!this.remoteStream);
+          console.log("🔊 Audio tracks:", audioTracks.length);
+          audioTracks.forEach((track, i) => {
+            console.log(`🔊 Audio track ${i}:`, {
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState,
+              id: track.id,
+            });
+          });
+        } else {
+          console.log("❌ No remote stream after 2 seconds!");
+        }
+      }, 2000);
     };
 
     // Add connection state change logging
