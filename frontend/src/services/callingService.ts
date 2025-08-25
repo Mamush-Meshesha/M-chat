@@ -1532,42 +1532,7 @@ class CallingService {
     }
   }
 
-  private isValidIceCandidate = (candidate: RTCIceCandidate): boolean => {
-    // Check if the candidate has valid properties
-    if (!candidate || !candidate.candidate) {
-      return false;
-    }
 
-    // Check if the candidate is from the current session
-    // This helps prevent "Unknown ufrag" errors from stale candidates
-    if (this.peerConnection) {
-      const currentState = this.peerConnection.connectionState;
-      const iceState = this.peerConnection.iceConnectionState;
-
-      // Only accept candidates when the connection is in a valid state
-      if (currentState === "closed" || currentState === "failed") {
-        return false;
-      }
-
-      // Skip candidates that might be from a previous session
-      if (iceState === "closed" || iceState === "failed") {
-        return false;
-      }
-
-      // Additional validation for ICE candidates
-      if (candidate.candidate === "") {
-        // This is the end-of-candidates marker, always accept it
-        return true;
-      }
-
-      // Check if the candidate has a valid foundation
-      if (!candidate.foundation || candidate.foundation === "null") {
-        return false;
-      }
-    }
-
-    return true;
-  };
 
   private async handleIceCandidate(data: any) {
     console.log("🧊 HANDLING ICE CANDIDATE:", data);
