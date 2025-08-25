@@ -34,6 +34,7 @@ class CallingService {
   private currentPlayingSound: HTMLAudioElement | null = null;
   private pendingOffer: any = null; // Queue for offers received before peer connection is ready
   private pendingAnswer: any = null;
+  private pendingIceCandidates: RTCIceCandidate[] = []; // Buffer ICE candidates until remote description is set
   private sentIceCandidates: Set<string> = new Set(); // Track sent ICE candidates to prevent duplicates
   private trackMonitorInterval: number | null = null;
   private eventCounts = { callAccepted: 0, callConnected: 0 };
@@ -598,6 +599,7 @@ class CallingService {
 
     // Handle ICE candidates
     this.socket.on("iceCandidate", (data) => {
+      console.log("🧊 === FRONTEND ICE CANDIDATE RECEIVED ===");
       console.log("🧊 SOCKET: ICE candidate received:", data);
       console.log("🧊 SOCKET: ICE candidate details:", {
         hasCandidate: !!data.candidate,
@@ -610,8 +612,20 @@ class CallingService {
         isCrossDevice: data.isCrossDevice,
       });
 
+      // Enhanced logging for debugging
+      console.log("🧊 FRONTEND: ICE candidate data analysis:", {
+        candidateExists: !!data.candidate,
+        candidateType: typeof data.candidate,
+        candidateKeys: data.candidate ? Object.keys(data.candidate) : [],
+        candidateString: data.candidate?.candidate,
+        sdpMid: data.candidate?.sdpMid,
+        sdpMLineIndex: data.candidate?.sdpMLineIndex,
+        timestamp: new Date().toISOString(),
+      });
+
       // Process the ICE candidate
       this.handleIceCandidate(data);
+      console.log("🧊 === END FRONTEND ICE CANDIDATE PROCESSING ===");
     });
 
     // Handle call ended
@@ -1389,6 +1403,12 @@ class CallingService {
       );
       console.log("✅ Remote description (offer) set");
 
+      // CRITICAL FIX: Process any buffered ICE candidates now that remote description is set
+      console.log(
+        "📦 Processing buffered ICE candidates after remote description set..."
+      );
+      await this.processBufferedIceCandidates();
+
       // Create answer
       console.log("🔄 Creating answer...");
       const answer = await this.peerConnection.createAnswer();
@@ -1488,6 +1508,12 @@ class CallingService {
       console.log("✅ Answer set as remote description");
       console.log("🎉 WebRTC connection established! Audio should now work.");
 
+      // CRITICAL FIX: Process any buffered ICE candidates now that remote description is set
+      console.log(
+        "📦 Processing buffered ICE candidates after remote description set..."
+      );
+      await this.processBufferedIceCandidates();
+
       // Debug: Check what tracks are available after setting remote description
       console.log("🎵 After setting remote description:");
       console.log(
@@ -1533,6 +1559,30 @@ class CallingService {
     }
   }
 
+  private async processBufferedIceCandidates() {
+    if (this.pendingIceCandidates.length === 0) {
+      return;
+    }
+
+    console.log(
+      "📦 Processing buffered ICE candidates:",
+      this.pendingIceCandidates.length
+    );
+
+    const candidatesToProcess = [...this.pendingIceCandidates];
+    this.pendingIceCandidates = [];
+
+    for (const iceCandidate of candidatesToProcess) {
+      try {
+        console.log("🧊 Processing buffered ICE candidate:", iceCandidate);
+        await this.peerConnection!.addIceCandidate(iceCandidate);
+        console.log("✅ Buffered ICE candidate added successfully");
+      } catch (error) {
+        console.error("❌ Error processing buffered ICE candidate:", error);
+      }
+    }
+  }
+
   private async handleIceCandidate(data: any) {
     console.log("🧊 HANDLING ICE CANDIDATE:", data);
     console.log("🧊 Candidate data:", {
@@ -1567,6 +1617,19 @@ class CallingService {
         return;
       }
 
+      // CRITICAL FIX: Check if remote description is set before adding ICE candidate
+      if (!this.peerConnection.remoteDescription) {
+        console.log(
+          "⏳ Remote description not set yet, buffering ICE candidate..."
+        );
+        this.pendingIceCandidates.push(iceCandidate);
+        console.log(
+          "📦 Buffered ICE candidates count:",
+          this.pendingIceCandidates.length
+        );
+        return;
+      }
+
       // Add the ICE candidate to the peer connection
       console.log("🧊 Adding ICE candidate to peer connection...");
       await this.peerConnection.addIceCandidate(iceCandidate);
@@ -1580,6 +1643,9 @@ class CallingService {
       );
       console.log("🧊 Connection state:", this.peerConnection.connectionState);
       console.log("🧊 Signaling state:", this.peerConnection.signalingState);
+
+      // Process any buffered ICE candidates
+      this.processBufferedIceCandidates();
     } catch (error) {
       // Log the error but don't crash the connection
       if (
@@ -1898,6 +1964,15 @@ class CallingService {
     this.pendingOffer = null;
     this.pendingAnswer = null;
     console.log("🧹 Pending offers and answers cleared");
+
+    // Clear pending ICE candidates
+    if (this.pendingIceCandidates.length > 0) {
+      console.log(
+        "🧹 Clearing pending ICE candidates:",
+        this.pendingIceCandidates.length
+      );
+      this.pendingIceCandidates = [];
+    }
 
     console.log("✅ Call resources cleaned up");
   }
