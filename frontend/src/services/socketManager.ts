@@ -43,14 +43,23 @@ class SocketManager {
    * This is the primary method to call after login or to force a connection.
    */
   public connect() {
-    // Disconnect any existing socket before creating a new one
-    if (this.socket) {
+    // Only disconnect if we have a connected socket
+    if (this.socket && this.socket.connected) {
       console.log(
-        "🔄 Disconnecting existing socket before creating a new one..."
+        "🔄 Disconnecting existing connected socket before creating a new one..."
       );
       this.socket.disconnect();
+      // Wait a bit for the disconnect to complete
+      setTimeout(() => {
+        this.createNewConnection();
+      }, 100);
+    } else {
+      // No existing socket or socket not connected, create new one directly
+      this.createNewConnection();
     }
+  }
 
+  private createNewConnection() {
     const authToken = this.getAuthToken();
     if (!authToken) {
       console.error(
@@ -64,11 +73,12 @@ class SocketManager {
     this.socket = io(config.SOCKET_URL, {
       // ✅ --- KEY CHANGES FOR SPEED AND RELIABILITY --- ✅
       reconnection: true, // Enable built-in reconnection
-      reconnectionAttempts: 5, // Attempt to reconnect 5 times
-      reconnectionDelay: 1000, // Start with a 1s delay
-      reconnectionDelayMax: 5000, // Max delay is 5s
-      timeout: 10000, // Connection timeout after 10s for Render
+      reconnectionAttempts: 10, // Increase reconnection attempts
+      reconnectionDelay: 2000, // Start with a 2s delay
+      reconnectionDelayMax: 10000, // Max delay is 10s
+      timeout: 20000, // Increase connection timeout for Render
       transports: ["polling", "websocket"], // Prioritize polling for Render compatibility
+      forceNew: false, // Don't force new connections
       // Auth token is sent on connection and during every reconnection attempt
       auth: {
         token: authToken,
@@ -91,6 +101,13 @@ class SocketManager {
       console.log(
         `✅ Socket connected successfully with ID: ${this.socket?.id}`
       );
+      console.log("🔌 Socket connection details:", {
+        socketId: this.socket?.id,
+        connected: this.socket?.connected,
+        transport: this.socket?.io?.engine?.transport?.name,
+        url: config.SOCKET_URL,
+        timestamp: new Date().toISOString(),
+      });
     });
 
     this.socket.on("disconnect", (reason) => {
@@ -107,6 +124,11 @@ class SocketManager {
 
     this.socket.on("connect_error", (error) => {
       console.error(`❌ Socket connection error: ${error.message}`);
+      console.error("🔌 Connection error details:", {
+        error: error.message,
+        url: config.SOCKET_URL,
+        timestamp: new Date().toISOString(),
+      });
       // This event is fired on failed connection attempts.
       // Socket.IO's backoff strategy will handle subsequent retries.
     });
