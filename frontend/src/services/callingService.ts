@@ -1211,6 +1211,7 @@ class CallingService {
             candidate: event.candidate,
             receiverId: receiverId,
             callId: this.activeCall?.callData.callId,
+            senderId: this.getCurrentUserId(), // Add sender ID for proper routing
           };
           console.log("🧊 Sending ICE candidate:", iceData);
           this.socket.emit("iceCandidate", iceData);
@@ -1531,8 +1532,6 @@ class CallingService {
       }
     }
   }
-
-
 
   private async handleIceCandidate(data: any) {
     console.log("🧊 HANDLING ICE CANDIDATE:", data);
