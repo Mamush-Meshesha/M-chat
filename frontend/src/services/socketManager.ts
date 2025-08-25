@@ -67,8 +67,8 @@ class SocketManager {
       reconnectionAttempts: 5, // Attempt to reconnect 5 times
       reconnectionDelay: 1000, // Start with a 1s delay
       reconnectionDelayMax: 5000, // Max delay is 5s
-      timeout: 5000, // Connection timeout after 5s (down from 20s!)
-      transports: ["websocket"], // Use websockets only
+      timeout: 10000, // Connection timeout after 10s for Render
+      transports: ["polling", "websocket"], // Prioritize polling for Render compatibility
       // Auth token is sent on connection and during every reconnection attempt
       auth: {
         token: authToken,

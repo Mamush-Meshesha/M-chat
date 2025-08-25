@@ -1,14 +1,17 @@
-const io = require("socket.io")(8000, {
+const io = require("socket.io")(process.env.PORT || 8000, {
   cors: {
     origin: "*", // Allow all origins for development
     methods: ["GET", "POST"],
     credentials: true,
   },
-  transports: ["websocket", "polling"],
+  transports: ["polling", "websocket"], // Prioritize polling for Render compatibility
+  allowEIO3: true, // Allow Engine.IO v3 clients
+  pingTimeout: 60000, // Increase ping timeout for Render
+  pingInterval: 25000, // Increase ping interval for Render
 });
 
 // Log server startup
-console.log("🚀 Socket.IO server starting on port 8000");
+console.log(`🚀 Socket.IO server starting on port ${process.env.PORT || 8000}`);
 
 // Global variables for tracking users and calls
 let activeUsers = [];
@@ -16,7 +19,19 @@ let activeCalls = new Map(); // Track active calls
 
 // Helper functions
 const getUser = (userId) => {
-  return activeUsers.find((user) => user.userId === userId);
+  const user = activeUsers.find((user) => user.userId === userId);
+  console.log("🔍 getUser() called:", {
+    requestedUserId: userId,
+    found: !!user,
+    userDetails: user ? { userId: user.userId, socketId: user.socketId } : null,
+    activeUsersCount: activeUsers.length,
+    allActiveUsers: activeUsers.map((u) => ({
+      userId: u.userId,
+      socketId: u.socketId,
+    })),
+    timestamp: new Date().toISOString(),
+  });
+  return user;
 };
 
 const getActiveCall = (userId) => {
@@ -24,10 +39,21 @@ const getActiveCall = (userId) => {
 };
 
 io.on("connection", (socket) => {
+  console.log("✅ === SOCKET CONNECTED ===");
   console.log("✅ Socket connected:", socket.id);
+  console.log("✅ Connection details:", {
+    socketId: socket.id,
+    timestamp: new Date().toISOString(),
+    activeUsersCount: activeUsers.length,
+    currentActiveUsers: activeUsers.map((u) => ({
+      userId: u.userId,
+      socketId: u.socketId,
+    })),
+  });
 
   // Add user to socket
   socket.on("addUser", (userId, user) => {
+    console.log("🔄 === ADDING USER ===");
     console.log("🔄 Adding user:", userId, "Socket:", socket.id);
 
     // Check if user already exists
@@ -47,7 +73,15 @@ io.on("connection", (socket) => {
       console.log("✅ Existing user socket ID updated");
     }
 
-    console.log("📊 Active users:", activeUsers.length);
+    console.log("📊 Active users after add/update:", {
+      totalUsers: activeUsers.length,
+      users: activeUsers.map((u) => ({
+        userId: u.userId,
+        socketId: u.socketId,
+      })),
+      currentUser: { userId, socketId: socket.id },
+      timestamp: new Date().toISOString(),
+    });
 
     // Emit updated users list to all clients
     io.emit("getUsers", activeUsers);
@@ -59,6 +93,7 @@ io.on("connection", (socket) => {
       message: "User successfully added to socket server",
       activeUsersCount: activeUsers.length,
     });
+    console.log("🔄 === END ADDING USER ===");
   });
 
   // Handle sending messages
@@ -446,24 +481,45 @@ io.on("connection", (socket) => {
   });
 
   socket.on("iceCandidate", (data) => {
+    console.log("🧊 === ICE CANDIDATE RECEIVED ===");
     console.log("🧊 SOCKET SERVER: Received ICE candidate:", {
       receiverId: data.receiverId,
+      senderId: data.senderId,
       hasCandidate: !!data.candidate,
       candidateType: data.candidate?.type,
+      candidateProtocol: data.candidate?.protocol,
       callId: data.callId,
+      fromSocketId: socket.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log active users for debugging
+    console.log("🧊 SOCKET SERVER: Active users at time of ICE candidate:", {
+      totalUsers: activeUsers.length,
+      users: activeUsers.map((u) => ({
+        userId: u.userId,
+        socketId: u.socketId,
+      })),
+      senderSocketId: socket.id,
+      senderUserId: activeUsers.find((u) => u.socketId === socket.id)?.userId,
     });
 
     const receiver = getUser(data.receiverId);
     if (receiver) {
-      // Find the sender's user ID from active users
-      const sender = activeUsers.find((u) => u.socketId === socket.id);
-      const senderId = sender ? sender.userId : null;
+      // Use the senderId directly from the data
+      const senderId = data.senderId;
 
-      console.log("🧊 SOCKET SERVER: Forwarding ICE candidate to receiver:", {
-        receiverSocketId: receiver.socketId,
-        senderId: senderId,
-        callId: data.callId,
-      });
+      console.log(
+        "🧊 SOCKET SERVER: Receiver found, forwarding ICE candidate:",
+        {
+          receiverSocketId: receiver.socketId,
+          receiverUserId: receiver.userId,
+          senderId: senderId,
+          callId: data.callId,
+          candidateType: data.candidate?.type,
+          candidateProtocol: data.candidate?.protocol,
+        }
+      );
 
       // Forward the ICE candidate with enhanced metadata
       io.to(receiver.socketId).emit("iceCandidate", {
@@ -474,24 +530,68 @@ io.on("connection", (socket) => {
       });
 
       console.log("✅ SOCKET SERVER: ICE candidate forwarded successfully");
+      console.log("🧊 SOCKET SERVER: ICE candidate routing details:", {
+        fromSocketId: socket.id,
+        toSocketId: receiver.socketId,
+        senderId: senderId,
+        receiverId: data.receiverId,
+        callId: data.callId,
+        candidateType: data.candidate?.type,
+        candidateProtocol: data.candidate?.protocol,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Log the actual data being sent
+      console.log("🧊 SOCKET SERVER: ICE candidate data sent to receiver:", {
+        candidate: data.candidate?.candidate,
+        sdpMid: data.candidate?.sdpMid,
+        sdpMLineIndex: data.candidate?.sdpMLineIndex,
+        foundation: data.candidate?.foundation,
+        component: data.candidate?.component,
+        priority: data.candidate?.priority,
+        address: data.candidate?.address,
+        port: data.candidate?.port,
+        type: data.candidate?.type,
+        protocol: data.candidate?.protocol,
+        usernameFragment: data.candidate?.usernameFragment,
+        networkId: data.candidate?.networkId,
+        networkCost: data.candidate?.networkCost,
+      });
     } else {
-      console.log(
-        "❌ SOCKET SERVER: Receiver not found for ICE candidate:",
-        data.receiverId
-      );
+      console.log("❌ SOCKET SERVER: Receiver not found for ICE candidate:", {
+        receiverId: data.receiverId,
+        activeUsers: activeUsers.map((u) => ({
+          userId: u.userId,
+          socketId: u.socketId,
+        })),
+        requestedReceiverId: data.receiverId,
+        timestamp: new Date().toISOString(),
+      });
     }
+    console.log("🧊 === END ICE CANDIDATE PROCESSING ===");
   });
 
   // Handle user disconnection
   socket.on("disconnect", () => {
+    console.log("🔌 === SOCKET DISCONNECTED ===");
     console.log("🔌 Socket disconnected:", socket.id);
 
-    // Clean up any active calls for this user
+    // Find the user ID for this socket
     const userId = activeUsers.find((u) => u.socketId === socket.id)?.userId;
+    console.log("🔌 Disconnected user details:", {
+      socketId: socket.id,
+      userId: userId,
+      timestamp: new Date().toISOString(),
+    });
 
     if (userId) {
       const callData = getActiveCall(userId);
       if (callData) {
+        console.log("🔌 User was in active call, cleaning up:", {
+          callData: callData,
+          userId: userId,
+        });
+
         // Notify other user that call ended due to disconnection
         const otherUserId =
           callData.callerId === userId
@@ -505,18 +605,33 @@ io.on("connection", (socket) => {
             enderId: userId,
             callType: callData.callType,
           });
+          console.log("🔌 Notified other user of call end:", otherUserId);
         }
 
         // Clean up call data
         activeCalls.delete(callData.callerId);
         activeCalls.delete(callData.receiverId);
+        console.log("🔌 Call data cleaned up");
       }
     }
 
     // Remove user from active users
+    const beforeCount = activeUsers.length;
     activeUsers = activeUsers.filter((user) => user.socketId !== socket.id);
-    io.emit("getUsers", activeUsers);
+    const afterCount = activeUsers.length;
 
-    console.log("📊 Active users after disconnect:", activeUsers.length);
+    console.log("📊 Active users after disconnect:", {
+      beforeCount: beforeCount,
+      afterCount: afterCount,
+      removedCount: beforeCount - afterCount,
+      remainingUsers: activeUsers.map((u) => ({
+        userId: u.userId,
+        socketId: u.socketId,
+      })),
+      timestamp: new Date().toISOString(),
+    });
+
+    io.emit("getUsers", activeUsers);
+    console.log("🔌 === END SOCKET DISCONNECT ===");
   });
 });
