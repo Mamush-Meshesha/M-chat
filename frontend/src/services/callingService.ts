@@ -40,6 +40,7 @@ class CallingService {
   private screenShareStream: MediaStream | null = null;
   private screenShareTrack: MediaStreamTrack | null = null;
   private isScreenSharing = false;
+  private connectionMonitorInterval: number | null = null;
 
   constructor() {
     console.log("🚀 CallingService constructor called");
@@ -596,31 +597,21 @@ class CallingService {
     });
 
     // Handle ICE candidates
-    this.socket.on("iceCandidate", async (data) => {
-      console.log("🎯 CALLING SERVICE: Received ICE candidate:", data);
-      console.log("🎯 ICE data:", {
+    this.socket.on("iceCandidate", (data) => {
+      console.log("🧊 SOCKET: ICE candidate received:", data);
+      console.log("🧊 SOCKET: ICE candidate details:", {
         hasCandidate: !!data.candidate,
-        hasSenderId: !!data.senderId,
+        candidateType: data.candidate?.type,
+        candidateProtocol: data.candidate?.protocol,
+        senderId: data.senderId,
         receiverId: data.receiverId,
-      });
-      console.log("🎯 Current peer connection state:", {
-        hasPeerConnection: !!this.peerConnection,
-        connectionState: this.peerConnection?.connectionState,
-        iceConnectionState: this.peerConnection?.iceConnectionState,
+        callId: data.callId,
+        timestamp: data.timestamp,
+        isCrossDevice: data.isCrossDevice,
       });
 
-      // Only process ICE candidates if we have a peer connection and the candidate is valid
-      if (this.peerConnection && data.candidate && data.candidate.candidate) {
-        // Check if this ICE candidate is from the current session
-        if (this.isValidIceCandidate(data.candidate)) {
-          await this.handleIceCandidate(data);
-        } else {
-          console.log(
-            "⚠️ Skipping ICE candidate from different session:",
-            data.candidate
-          );
-        }
-      }
+      // Process the ICE candidate
+      this.handleIceCandidate(data);
     });
 
     // Handle call ended
@@ -1200,19 +1191,48 @@ class CallingService {
     // Enhanced ICE candidate handling
     peerConnection.onicecandidate = (event) => {
       console.log("🧊 ICE candidate generated:", event.candidate);
+      console.log("🧊 ICE candidate details:", {
+        type: event.candidate?.type,
+        protocol: event.candidate?.protocol,
+        address: event.candidate?.address,
+        port: event.candidate?.port,
+        candidate: event.candidate?.candidate,
+        sdpMid: event.candidate?.sdpMid,
+        sdpMLineIndex: event.candidate?.sdpMLineIndex,
+      });
+
       if (event.candidate && this.socket) {
         // Send ICE candidate to the other peer
         const receiverId =
           this.activeCall?.callData.receiverId ||
           this.activeCall?.callData.callerId;
         if (receiverId) {
-          this.socket.emit("iceCandidate", {
+          const iceData = {
             candidate: event.candidate,
             receiverId: receiverId,
             callId: this.activeCall?.callData.callId,
-          });
+          };
+          console.log("🧊 Sending ICE candidate:", iceData);
+          this.socket.emit("iceCandidate", iceData);
           console.log("✅ ICE candidate sent to:", receiverId);
+        } else {
+          console.error("❌ No receiver ID found for ICE candidate");
         }
+      } else if (!event.candidate) {
+        console.log("🧊 ICE gathering complete - no more candidates");
+      } else {
+        console.error("❌ No socket available for ICE candidate");
+      }
+    };
+
+    // Monitor ICE gathering state
+    peerConnection.onicegatheringstatechange = () => {
+      console.log(
+        "🧊 ICE gathering state changed:",
+        peerConnection.iceGatheringState
+      );
+      if (peerConnection.iceGatheringState === "complete") {
+        console.log("✅ ICE gathering completed");
       }
     };
 
@@ -1224,9 +1244,29 @@ class CallingService {
       );
       console.log("🔗 Connection state:", peerConnection.connectionState);
 
+      // Log detailed ICE state information
+      console.log("🧊 DETAILED ICE STATE:", {
+        iceConnectionState: peerConnection.iceConnectionState,
+        connectionState: peerConnection.connectionState,
+        iceGatheringState: peerConnection.iceGatheringState,
+        signalingState: peerConnection.signalingState,
+        hasLocalDescription: !!peerConnection.localDescription,
+        hasRemoteDescription: !!peerConnection.remoteDescription,
+      });
+
       if (peerConnection.iceConnectionState === "failed") {
         console.error("❌ ICE connection failed - trying to restart ICE");
+        console.error(
+          "❌ This usually means ICE candidates couldn't establish a connection"
+        );
         peerConnection.restartIce();
+      } else if (peerConnection.iceConnectionState === "connected") {
+        console.log("✅ ICE connection established successfully!");
+        console.log("🎵 Media path should now be working!");
+      } else if (peerConnection.iceConnectionState === "checking") {
+        console.log("🔄 ICE connection checking - testing candidate pairs...");
+      } else if (peerConnection.iceConnectionState === "disconnected") {
+        console.log("⚠️ ICE connection disconnected");
       }
     };
 
@@ -1237,10 +1277,29 @@ class CallingService {
         peerConnection.connectionState
       );
 
+      // Log detailed state information
+      console.log("🔗 DETAILED CONNECTION STATE:", {
+        connectionState: peerConnection.connectionState,
+        iceConnectionState: peerConnection.iceConnectionState,
+        iceGatheringState: peerConnection.iceGatheringState,
+        signalingState: peerConnection.signalingState,
+        hasLocalDescription: !!peerConnection.localDescription,
+        hasRemoteDescription: !!peerConnection.remoteDescription,
+        localDescriptionType: peerConnection.localDescription?.type,
+        remoteDescriptionType: peerConnection.remoteDescription?.type,
+      });
+
       if (peerConnection.connectionState === "failed") {
         console.error("❌ WebRTC connection failed");
         // Notify UI about connection failure
         this.onCallEnded?.({ reason: "Connection failed" });
+      } else if (peerConnection.connectionState === "connected") {
+        console.log("✅ WebRTC connection established successfully!");
+        console.log("🎵 Audio should now be working!");
+      } else if (peerConnection.connectionState === "connecting") {
+        console.log("🔄 WebRTC connection is connecting...");
+      } else if (peerConnection.connectionState === "disconnected") {
+        console.log("⚠️ WebRTC connection disconnected");
       }
     };
 
@@ -1263,8 +1322,47 @@ class CallingService {
       }
     };
 
+    // Start connection quality monitoring
+    this.startConnectionQualityMonitoring(peerConnection);
+
     console.log("✅ Peer connection created with enhanced configuration");
     return peerConnection;
+  }
+
+  // Simple connection quality monitoring
+  private startConnectionQualityMonitoring(pc: RTCPeerConnection) {
+    if (!pc) return;
+
+    console.log("🔍 Starting connection quality monitoring...");
+
+    const monitorInterval = setInterval(() => {
+      if (!pc || pc.connectionState === "closed") {
+        clearInterval(monitorInterval);
+        return;
+      }
+
+      console.log("📊 CONNECTION STATUS:", {
+        timestamp: new Date().toISOString(),
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+        iceGatheringState: pc.iceGatheringState,
+        signalingState: pc.signalingState,
+        hasLocalDescription: !!pc.localDescription,
+        hasRemoteDescription: !!pc.remoteDescription,
+        localDescriptionType: pc.localDescription?.type,
+        remoteDescriptionType: pc.remoteDescription?.type,
+      });
+
+      // Check if connection is stuck
+      if (pc.connectionState === "new" && pc.iceConnectionState === "new") {
+        console.warn(
+          "⚠️ Connection stuck in 'new' state - ICE candidates may not be exchanging"
+        );
+      }
+    }, 5000); // Check every 5 seconds
+
+    // Store interval for cleanup
+    this.connectionMonitorInterval = monitorInterval as unknown as number;
   }
 
   private async handleOffer(data: any) {
@@ -1472,23 +1570,52 @@ class CallingService {
   };
 
   private async handleIceCandidate(data: any) {
-    try {
-      if (!this.peerConnection) return;
+    console.log("🧊 HANDLING ICE CANDIDATE:", data);
+    console.log("🧊 Candidate data:", {
+      hasCandidate: !!data.candidate,
+      candidateType: data.candidate?.type,
+      candidateProtocol: data.candidate?.protocol,
+      candidateAddress: data.candidate?.address,
+      candidatePort: data.candidate?.port,
+      senderId: data.senderId,
+      receiverId: data.receiverId,
+      callId: data.callId,
+    });
 
-      console.log("🔄 Handling ICE candidate:", data);
+    try {
+      if (!this.peerConnection) {
+        console.error("❌ No peer connection available for ICE candidate");
+        return;
+      }
 
       // Create a new RTCIceCandidate with proper error handling
       let iceCandidate: RTCIceCandidate;
       try {
         iceCandidate = new RTCIceCandidate(data.candidate);
+        console.log("🧊 ICE candidate created successfully:", {
+          type: iceCandidate.type,
+          protocol: iceCandidate.protocol,
+          address: iceCandidate.address,
+          port: iceCandidate.port,
+        });
       } catch (candidateError) {
         console.warn("⚠️ Invalid ICE candidate format:", candidateError);
         return;
       }
 
       // Add the ICE candidate to the peer connection
+      console.log("🧊 Adding ICE candidate to peer connection...");
       await this.peerConnection.addIceCandidate(iceCandidate);
       console.log("✅ ICE candidate added to peer connection");
+
+      // Log current connection states after adding candidate
+      console.log("🧊 After adding ICE candidate:");
+      console.log(
+        "🧊 ICE connection state:",
+        this.peerConnection.iceConnectionState
+      );
+      console.log("🧊 Connection state:", this.peerConnection.connectionState);
+      console.log("🧊 Signaling state:", this.peerConnection.signalingState);
     } catch (error) {
       // Log the error but don't crash the connection
       if (
@@ -1795,6 +1922,13 @@ class CallingService {
     // Stop ringtones
     this.stopRingtone();
     this.stopCallRingtone();
+
+    // Stop connection monitoring
+    if (this.connectionMonitorInterval) {
+      clearInterval(this.connectionMonitorInterval);
+      this.connectionMonitorInterval = null;
+      console.log("🔍 Connection monitoring stopped");
+    }
 
     // Clear pending offers and answers
     this.pendingOffer = null;
