@@ -366,27 +366,33 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle WebRTC signaling
+  // Handle WebRTC signaling with enhanced cross-device support
   socket.on("offer", (data) => {
     console.log("🎯 SOCKET SERVER: Received offer:", {
       receiverId: data.receiverId,
       hasOffer: !!data.offer,
       offerType: data.offer?.type,
+      callId: data.callId,
     });
 
     const receiver = getUser(data.receiverId);
     if (receiver) {
+      // Find the sender's user ID from active users
       const sender = activeUsers.find((u) => u.socketId === socket.id);
       const senderId = sender ? sender.userId : null;
 
       console.log("🎯 SOCKET SERVER: Forwarding offer to receiver:", {
         receiverSocketId: receiver.socketId,
         senderId: senderId,
+        callId: data.callId,
       });
 
+      // Forward the offer with enhanced metadata for cross-device calls
       io.to(receiver.socketId).emit("offer", {
         ...data,
         senderId: senderId,
+        timestamp: Date.now(),
+        isCrossDevice: true, // Flag for cross-device handling
       });
 
       console.log("✅ SOCKET SERVER: Offer forwarded successfully");
@@ -403,28 +409,76 @@ io.on("connection", (socket) => {
   });
 
   socket.on("answer", (data) => {
+    console.log("🎯 SOCKET SERVER: Received answer:", {
+      receiverId: data.receiverId,
+      hasAnswer: !!data.answer,
+      answerType: data.answer?.type,
+      callId: data.callId,
+    });
+
     const receiver = getUser(data.receiverId);
     if (receiver) {
+      // Find the sender's user ID from active users
       const sender = activeUsers.find((u) => u.socketId === socket.id);
       const senderId = sender ? sender.userId : null;
 
+      console.log("🎯 SOCKET SERVER: Forwarding answer to receiver:", {
+        receiverSocketId: receiver.socketId,
+        senderId: senderId,
+        callId: data.callId,
+      });
+
+      // Forward the answer with enhanced metadata
       io.to(receiver.socketId).emit("answer", {
         ...data,
         senderId: senderId,
+        timestamp: Date.now(),
+        isCrossDevice: true,
       });
+
+      console.log("✅ SOCKET SERVER: Answer forwarded successfully");
+    } else {
+      console.log(
+        "❌ SOCKET SERVER: Receiver not found for answer:",
+        data.receiverId
+      );
     }
   });
 
   socket.on("iceCandidate", (data) => {
+    console.log("🧊 SOCKET SERVER: Received ICE candidate:", {
+      receiverId: data.receiverId,
+      hasCandidate: !!data.candidate,
+      candidateType: data.candidate?.type,
+      callId: data.callId,
+    });
+
     const receiver = getUser(data.receiverId);
     if (receiver) {
+      // Find the sender's user ID from active users
       const sender = activeUsers.find((u) => u.socketId === socket.id);
       const senderId = sender ? sender.userId : null;
 
+      console.log("🧊 SOCKET SERVER: Forwarding ICE candidate to receiver:", {
+        receiverSocketId: receiver.socketId,
+        senderId: senderId,
+        callId: data.callId,
+      });
+
+      // Forward the ICE candidate with enhanced metadata
       io.to(receiver.socketId).emit("iceCandidate", {
         ...data,
         senderId: senderId,
+        timestamp: Date.now(),
+        isCrossDevice: true,
       });
+
+      console.log("✅ SOCKET SERVER: ICE candidate forwarded successfully");
+    } else {
+      console.log(
+        "❌ SOCKET SERVER: Receiver not found for ICE candidate:",
+        data.receiverId
+      );
     }
   });
 

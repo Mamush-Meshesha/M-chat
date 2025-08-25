@@ -27,7 +27,6 @@ class CallingService {
   private remoteStream: MediaStream | null = null;
   private peerConnection: RTCPeerConnection | null = null;
   private callStartTime: number | null = null;
-  private isProcessingOntrack: boolean = false; // Prevent multiple ontrack processing
 
   // Sound management for different call scenarios
   private callingSound: HTMLAudioElement | null = null;
@@ -41,7 +40,6 @@ class CallingService {
   private screenShareStream: MediaStream | null = null;
   private screenShareTrack: MediaStreamTrack | null = null;
   private isScreenSharing = false;
-  private connectionQualityInterval: number | null = null;
 
   constructor() {
     console.log("🚀 CallingService constructor called");
@@ -1159,16 +1157,20 @@ class CallingService {
   }
 
   private createPeerConnection(): RTCPeerConnection {
-    const configuration = {
+    console.log("=== CALLING SERVICE: Creating peer connection ===");
+
+    // Enhanced WebRTC configuration for cross-device reliability
+    const configuration: RTCConfiguration = {
       iceServers: [
-        // STUN servers for same network
+        // STUN servers for public IP discovery
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:stun3.l.google.com:19302" },
         { urls: "stun:stun4.l.google.com:19302" },
 
-        // TURN servers for different networks (different PCs)
+        // TURN servers for relay when direct connection fails
+        // You can use free TURN servers for testing, or set up your own
         {
           urls: "turn:openrelay.metered.ca:80",
           username: "openrelayproject",
@@ -1184,403 +1186,85 @@ class CallingService {
           username: "openrelayproject",
           credential: "openrelayproject",
         },
-
-        // Additional TURN servers for better coverage
-        {
-          urls: "turn:global.turn.twilio.com:3478?transport=udp",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:global.turn.twilio.com:3478?transport=tcp",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:global.turn.twilio.com:443?transport=tcp",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
       ],
-      iceCandidatePoolSize: 20, // Increased for better network discovery
-      iceTransportPolicy: "all" as RTCIceTransportPolicy, // Allow both UDP and TCP
-      // Network optimization for different PCs
-      bundlePolicy: "max-bundle" as RTCBundlePolicy,
-      rtcpMuxPolicy: "require" as RTCRtcpMuxPolicy,
-      // Force TURN usage for different networks
+      iceCandidatePoolSize: 10,
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
+      iceTransportPolicy: "all",
     };
 
-    console.log("🔄 Creating peer connection with config:", configuration);
-    const pc = new RTCPeerConnection(configuration);
+    console.log("🔧 WebRTC Configuration:", configuration);
 
-    // Monitor peer connection state changes
-    pc.addEventListener("connectionstatechange", () => {
-      console.log("🔄 PEER CONNECTION STATE CHANGE:", {
-        connectionState: pc.connectionState,
-        iceConnectionState: pc.iceConnectionState,
-        iceGatheringState: pc.iceGatheringState,
-        signalingState: pc.signalingState,
-      });
-    });
+    const peerConnection = new RTCPeerConnection(configuration);
 
-    pc.addEventListener("iceconnectionstatechange", () => {
-      console.log("🧊 ICE CONNECTION STATE CHANGE:", pc.iceConnectionState);
-
-      // Log detailed ICE connection information for debugging
-      if (pc.iceConnectionState === "failed") {
-        console.error(
-          "❌ ICE connection failed - this often happens with long-distance calls"
-        );
-        console.error(
-          "❌ Possible causes: firewall, NAT, or network restrictions"
-        );
-        console.error("❌ TURN servers should help with relay");
-      } else if (pc.iceConnectionState === "disconnected") {
-        console.warn(
-          "⚠️ ICE connection disconnected - connection may be unstable"
-        );
-      } else if (pc.iceConnectionState === "connected") {
-        console.log("✅ ICE connection established successfully");
-      }
-    });
-
-    pc.addEventListener("signalingstatechange", () => {
-      console.log("📡 SIGNALING STATE CHANGE:", pc.signalingState);
-    });
-
-    // Handle ICE candidates
-    pc.onicecandidate = (event) => {
-      console.log("🔄 ICE candidate generated:", event.candidate);
-
-      // Log network type for debugging
-      if (event.candidate) {
-        const candidate = event.candidate;
-        console.log("🌐 ICE Candidate Analysis:", {
-          type: candidate.type,
-          protocol: candidate.protocol,
-          address: candidate.address,
-          port: candidate.port,
-          isRelay: candidate.type === "relay",
-          isSrflx: candidate.type === "srflx",
-          isHost: candidate.type === "host",
-          isPrflx: candidate.type === "prflx",
-        });
-
-        // Prioritize TURN servers for different networks
-        if (candidate.type === "relay") {
-          console.log("🔄 TURN relay candidate - good for different PCs!");
-        } else if (candidate.type === "srflx") {
-          console.log(
-            "🔄 STUN reflexive candidate - may work for different PCs"
-          );
-        } else if (candidate.type === "host") {
-          console.log("🔄 Host candidate - only works for same network");
-        }
-      }
-
-      if (event.candidate && this.socket && this.activeCall) {
-        // Only send valid ICE candidates
-        if (this.isValidIceCandidate(event.candidate)) {
-          this.sendIceCandidate(event.candidate);
-        } else {
-          console.log("⚠️ Skipping invalid ICE candidate:", event.candidate);
-        }
-      }
-    };
-
-    // Handle remote stream
-    pc.ontrack = (event) => {
-      console.log("🎵 ONTRACK EVENT FIRED!");
-      console.log("🎵 Event streams:", event.streams);
-      console.log("🎵 Event track:", event.track);
-      console.log("🎵 Track kind:", event.track.kind);
-      console.log("🎵 Track enabled:", event.track.enabled);
-      console.log("🎵 Track readyState:", event.track.readyState);
-      console.log(
-        "🎵 Current user role:",
-        this.activeCall?.callData.callerId === this.getCurrentUserId()
-          ? "caller"
-          : "receiver"
-      );
-      console.log("🎵 Peer connection state:", pc.connectionState);
-      console.log("🎵 ICE connection state:", pc.iceConnectionState);
-      console.log("🎵 Call ID:", this.activeCall?.callData.callId);
-      console.log("🎵 Call type:", this.activeCall?.callData.callType);
-
-      // AGGRESSIVE duplicate prevention - if we already have a remote stream, skip
-      if (this.remoteStream) {
-        console.log(
-          "🔄 REMOTE STREAM ALREADY EXISTS - Skipping duplicate ontrack event"
-        );
-        console.log("🔄 Existing stream ID:", this.remoteStream.id);
-        console.log("🔄 New stream ID:", event.streams[0]?.id);
-        console.log(
-          "🔄 This prevents audio interruption from multiple ontrack events"
-        );
-        return; // Exit early - no more processing
-      }
-
-      // Check if this is a duplicate track event
-      if (this.remoteStream && event.streams[0]) {
-        const existingStream = this.remoteStream;
-        const newStream = event.streams[0];
-
-        // Check if streams have the same tracks
-        const existingTracks = existingStream.getTracks();
-        const newTracks = newStream.getTracks();
-
-        if (existingTracks.length === newTracks.length) {
-          const isDuplicate = existingTracks.every((existingTrack, index) => {
-            const newTrack = newTracks[index];
-            return (
-              existingTrack.id === newTrack.id &&
-              existingTrack.kind === newTrack.kind
-            );
+    // Enhanced ICE candidate handling
+    peerConnection.onicecandidate = (event) => {
+      console.log("🧊 ICE candidate generated:", event.candidate);
+      if (event.candidate && this.socket) {
+        // Send ICE candidate to the other peer
+        const receiverId =
+          this.activeCall?.callData.receiverId ||
+          this.activeCall?.callData.callerId;
+        if (receiverId) {
+          this.socket.emit("iceCandidate", {
+            candidate: event.candidate,
+            receiverId: receiverId,
+            callId: this.activeCall?.callData.callId,
           });
-
-          if (isDuplicate) {
-            console.log(
-              "🔄 Duplicate ontrack event detected, skipping stream update"
-            );
-            return;
-          }
+          console.log("✅ ICE candidate sent to:", receiverId);
         }
       }
+    };
 
-      // Set remote stream
-      this.remoteStream = event.streams[0];
-      console.log("🎵 Remote stream set:", this.remoteStream);
+    // Monitor ICE connection state
+    peerConnection.oniceconnectionstatechange = () => {
       console.log(
-        "🎵 Remote stream tracks:",
-        this.remoteStream?.getTracks().length
+        "🧊 ICE connection state changed:",
+        peerConnection.iceConnectionState
+      );
+      console.log("🔗 Connection state:", peerConnection.connectionState);
+
+      if (peerConnection.iceConnectionState === "failed") {
+        console.error("❌ ICE connection failed - trying to restart ICE");
+        peerConnection.restartIce();
+      }
+    };
+
+    // Monitor connection state
+    peerConnection.onconnectionstatechange = () => {
+      console.log(
+        "🔗 Connection state changed:",
+        peerConnection.connectionState
       );
 
-      // IMMEDIATE audio check
-      console.log("🔊 IMMEDIATE AUDIO CHECK:");
-      if (this.remoteStream) {
-        const audioTracks = this.remoteStream.getAudioTracks();
-        console.log("🔊 Audio tracks found:", audioTracks.length);
-        audioTracks.forEach((track, i) => {
-          console.log(`🔊 Audio track ${i}:`, {
-            enabled: track.enabled,
-            muted: track.muted,
-            readyState: track.readyState,
-            id: track.id,
-          });
-        });
-      } else {
-        console.log("❌ No remote stream set!");
+      if (peerConnection.connectionState === "failed") {
+        console.error("❌ WebRTC connection failed");
+        // Notify UI about connection failure
+        this.onCallEnded?.({ reason: "Connection failed" });
       }
-
-      // Log all tracks in the received stream
-      if (event.streams && event.streams.length > 0) {
-        const stream = event.streams[0];
-        console.log("🎵 Received stream tracks:", {
-          totalTracks: stream.getTracks().length,
-          audioTracks: stream.getAudioTracks().length,
-          videoTracks: stream.getVideoTracks().length,
-          trackDetails: stream.getTracks().map((t, i) => ({
-            index: i,
-            kind: t.kind,
-            enabled: t.enabled,
-            muted: t.muted,
-            readyState: t.readyState,
-            id: t.id,
-            label: t.label,
-          })),
-        });
-
-        // Check each track for screen share indicators
-        stream.getTracks().forEach((track, index) => {
-          console.log(`🔍 Track ${index} analysis:`, {
-            kind: track.kind,
-            label: track.label,
-            id: track.id,
-            isScreenShare:
-              track.label?.toLowerCase().includes("screen") ||
-              track.label?.toLowerCase().includes("display") ||
-              track.label?.toLowerCase().includes("capture"),
-            hasScreenKeywords: track.label?.toLowerCase().includes("screen"),
-            hasDisplayKeywords: track.label?.toLowerCase().includes("display"),
-            hasCaptureKeywords: track.label?.toLowerCase().includes("capture"),
-          });
-        });
-      }
-
-      // Check if this is a screen share track
-      const trackLabel = event.track.label || "";
-      const isScreenShare =
-        trackLabel.toLowerCase().includes("screen") ||
-        trackLabel.toLowerCase().includes("display") ||
-        trackLabel.toLowerCase().includes("capture") ||
-        trackLabel.toLowerCase().includes("monitor") ||
-        trackLabel.toLowerCase().includes("window") ||
-        trackLabel.toLowerCase().includes("tab");
-
-      console.log("🔍 Screen share detection:", {
-        trackLabel,
-        isScreenShare,
-        kind: event.track.kind,
-        id: event.track.id,
-        hasScreen: trackLabel.toLowerCase().includes("screen"),
-        hasDisplay: trackLabel.toLowerCase().includes("display"),
-        hasCapture: trackLabel.toLowerCase().includes("capture"),
-        hasMonitor: trackLabel.toLowerCase().includes("monitor"),
-        hasWindow: trackLabel.toLowerCase().includes("window"),
-        hasTab: trackLabel.toLowerCase().includes("tab"),
-      });
-
-      if (event.track.kind === "video" && isScreenShare) {
-        console.log("🖥️ SCREEN SHARE TRACK RECEIVED!");
-        console.log("🖥️ Track label:", trackLabel);
-        console.log("🖥️ Track ID:", event.track.id);
-
-        // Create a new stream for screen share or add to existing remote stream
-        if (event.streams && event.streams.length > 0) {
-          this.screenShareStream = event.streams[0];
-          console.log(
-            "✅ Screen share stream received:",
-            this.screenShareStream
-          );
-        } else {
-          // Create a new stream for the screen share track
-          this.screenShareStream = new MediaStream([event.track]);
-          console.log("✅ Screen share stream created from track");
-        }
-
-        // Emit screen share received event
-        this.emit("screenShareReceived", {
-          stream: this.screenShareStream,
-          trackId: event.track.id,
-        });
-      }
-
-      // Debug: Check if this is the first time we're setting the remote stream
-      if (!this.remoteStream) {
-        console.log(
-          "🎵 This is the FIRST ontrack event - setting up remote stream"
-        );
-      } else {
-        console.log(
-          "🎵 This is an ADDITIONAL ontrack event - updating existing stream"
-        );
-      }
-
-      this.onRemoteStream?.(this.remoteStream);
-
-      // Start monitoring connection quality for debugging long-distance calls
-      this.startConnectionQualityMonitoring(pc);
-
-      // Simple check: is the remote stream actually working?
-      setTimeout(() => {
-        if (this.remoteStream) {
-          const audioTracks = this.remoteStream.getAudioTracks();
-          console.log("🔊 AFTER 2 SECONDS - AUDIO CHECK:");
-          console.log("🔊 Remote stream exists:", !!this.remoteStream);
-          console.log("🔊 Audio tracks:", audioTracks.length);
-          audioTracks.forEach((track, i) => {
-            console.log(`🔊 Audio track ${i}:`, {
-              enabled: track.enabled,
-              muted: track.muted,
-              readyState: track.readyState,
-              id: track.id,
-            });
-          });
-        } else {
-          console.log("❌ No remote stream after 2 seconds!");
-        }
-      }, 2000);
     };
 
-    // Add connection state change logging
-    pc.onconnectionstatechange = () => {
-      console.log("🔄 Peer connection state changed:", pc.connectionState);
+    // Monitor signaling state
+    peerConnection.onsignalingstatechange = () => {
+      console.log("📡 Signaling state changed:", peerConnection.signalingState);
     };
 
-    pc.oniceconnectionstatechange = () => {
-      console.log("🔄 ICE connection state changed:", pc.iceConnectionState);
-    };
+    // Handle incoming tracks
+    peerConnection.ontrack = (event) => {
+      console.log("🎵 Track received:", event.track);
+      console.log("🎵 Streams:", event.streams);
 
-    pc.onsignalingstatechange = () => {
-      console.log("🔄 Signaling state changed:", pc.signalingState);
-    };
+      if (event.streams && event.streams[0]) {
+        this.remoteStream = event.streams[0];
+        console.log("✅ Remote stream set:", this.remoteStream);
 
-    // Set up comprehensive WebRTC state monitoring
-    const comprehensiveMonitor = setInterval(() => {
-      if (this.localStream) {
-        const tracks = this.localStream.getTracks();
-        const videoTracks = this.localStream.getVideoTracks();
-        const audioTracks = this.localStream.getAudioTracks();
-
-        console.log("📊 COMPREHENSIVE MONITOR:", {
-          timestamp: new Date().toISOString(),
-          localStream: {
-            id: this.localStream.id,
-            active: this.localStream.active,
-            trackCount: tracks.length,
-            videoTracks: videoTracks.length,
-            audioTracks: audioTracks.length,
-          },
-          peerConnection: {
-            connectionState: pc.connectionState,
-            iceConnectionState: pc.iceConnectionState,
-            iceGatheringState: pc.iceGatheringState,
-            signalingState: pc.signalingState,
-            localDescription: pc.localDescription?.type,
-            remoteDescription: pc.remoteDescription?.type,
-          },
-          activeCall: {
-            exists: !!this.activeCall,
-            callType: this.activeCall?.callData.callType,
-            status: this.activeCall?.callData.status,
-            callerId: this.activeCall?.callData.callerId,
-            receiverId: this.activeCall?.callData.receiverId,
-          },
-          remoteStream: {
-            exists: !!this.remoteStream,
-            trackCount: this.remoteStream?.getTracks().length || 0,
-            videoTracks: this.remoteStream?.getVideoTracks().length || 0,
-            audioTracks: this.remoteStream?.getAudioTracks().length || 0,
-          },
-          screenShare: {
-            isSharing: this.isScreenSharing,
-            hasRemoteStream: !!this.screenShareStream,
-            remoteTrackCount: this.screenShareStream?.getTracks().length || 0,
-          },
-          socketStatus: {
-            hasSocket: !!this.socket,
-            isConnected: this.socket?.connected || false,
-            socketId: this.socket?.id || null,
-            connectionState: this.socket?.connected
-              ? "connected"
-              : "disconnected",
-            socketManagerStatus: socketManager.getSocketStatus(),
-          },
-          eventCounts: this.eventCounts,
-          currentUserId: this.getCurrentUserId(),
-        });
-
-        // Alert on critical issues
-        if (
-          videoTracks.length === 0 &&
-          this.activeCall?.callData.callType === "video"
-        ) {
-          console.log("🚨 CRITICAL: Video tracks disappeared on video call!");
-          console.log("🚨 Full state dump:", {
-            localStream: this.localStream,
-            peerConnection: pc,
-            activeCall: this.activeCall,
-            remoteStream: this.remoteStream,
-          });
-        }
+        // Notify UI about remote stream
+        this.onRemoteStream?.(this.remoteStream);
       }
-    }, 1000); // Check every second for more granular monitoring
+    };
 
-    // Store the interval ID so we can clear it later
-    this.trackMonitorInterval = comprehensiveMonitor as unknown as number;
-
-    console.log("✅ Peer connection created with event handlers");
-    return pc;
+    console.log("✅ Peer connection created with enhanced configuration");
+    return peerConnection;
   }
 
   private async handleOffer(data: any) {
@@ -1821,27 +1505,6 @@ class CallingService {
     }
   }
 
-  private sendIceCandidate(candidate: RTCIceCandidate) {
-    if (this.socket && this.activeCall) {
-      // Prevent sending duplicate ICE candidates
-      const candidateKey = `${candidate.candidate}-${candidate.sdpMid}-${candidate.sdpMLineIndex}`;
-
-      if (!this.sentIceCandidates.has(candidateKey)) {
-        this.sentIceCandidates.add(candidateKey);
-
-        this.socket.emit("iceCandidate", {
-          candidate: candidate,
-          receiverId: this.activeCall.receiverId,
-          senderId: this.getCurrentUserId(),
-        });
-
-        console.log("🔄 ICE candidate sent:", candidateKey);
-      } else {
-        console.log("⚠️ Skipping duplicate ICE candidate:", candidateKey);
-      }
-    }
-  }
-
   startRingtone() {
     console.log("🔔 Starting ringtone for incoming call...");
 
@@ -2049,7 +1712,7 @@ class CallingService {
       // Send offer to the receiver
       const offerData = {
         offer,
-        receiverId: this.activeCall.receiverId,
+        receiverId: this.activeCall.callData.receiverId,
         senderId: this.getCurrentUserId(), // Add sender ID for answer routing
       };
       console.log("🔄 Sending offer data:", offerData);
@@ -2061,10 +1724,13 @@ class CallingService {
         message: "Test event from caller",
         timestamp: Date.now(),
         callerId: this.getCurrentUserId(),
-        receiverId: this.activeCall.receiverId,
+        receiverId: this.activeCall.callData.receiverId,
       });
 
-      console.log("✅ Offer sent to receiver:", this.activeCall.receiverId);
+      console.log(
+        "✅ Offer sent to receiver:",
+        this.activeCall.callData.receiverId
+      );
     } catch (error) {
       console.error("❌ Error creating and sending offer:", error);
     }
@@ -2129,13 +1795,6 @@ class CallingService {
     // Stop ringtones
     this.stopRingtone();
     this.stopCallRingtone();
-
-    // Stop connection quality monitoring
-    if (this.connectionQualityInterval) {
-      clearInterval(this.connectionQualityInterval);
-      this.connectionQualityInterval = null;
-      console.log("🔍 Connection quality monitoring stopped");
-    }
 
     // Clear pending offers and answers
     this.pendingOffer = null;
@@ -2365,61 +2024,6 @@ class CallingService {
 
   public getSocket() {
     return this.socket;
-  }
-
-  // Start monitoring connection quality for debugging long-distance calls
-  private startConnectionQualityMonitoring(pc: RTCPeerConnection) {
-    if (!pc) return;
-
-    console.log(
-      "🔍 Starting connection quality monitoring for long-distance calls..."
-    );
-
-    // Monitor connection stats every 2 seconds
-    const monitorInterval = setInterval(async () => {
-      try {
-        const stats = await pc.getStats();
-        let hasAudio = false;
-        let hasVideo = false;
-        let audioPacketsLost = 0;
-        let videoPacketsLost = 0;
-
-        stats.forEach((report) => {
-          if (report.type === "inbound-rtp" && report.mediaType === "audio") {
-            hasAudio = true;
-            audioPacketsLost = report.packetsLost || 0;
-          }
-          if (report.type === "inbound-rtp" && report.mediaType === "video") {
-            hasVideo = true;
-            videoPacketsLost = report.packetsLost || 0;
-          }
-        });
-
-        console.log("📊 Connection Quality Stats:", {
-          hasAudio,
-          hasVideo,
-          audioPacketsLost,
-          videoPacketsLost,
-          connectionState: pc.connectionState,
-          iceConnectionState: pc.iceConnectionState,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Stop monitoring if connection is closed
-        if (
-          pc.connectionState === "closed" ||
-          pc.connectionState === "failed"
-        ) {
-          clearInterval(monitorInterval);
-          console.log("🔍 Connection quality monitoring stopped");
-        }
-      } catch (error) {
-        console.error("❌ Error getting connection stats:", error);
-      }
-    }, 2000);
-
-    // Store the interval ID for cleanup
-    this.connectionQualityInterval = monitorInterval as unknown as number;
   }
 
   // Recreate peer connection when signaling state gets corrupted

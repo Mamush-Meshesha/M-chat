@@ -559,7 +559,7 @@ const CallDialog: FC<CallDialogProps> = ({
     }
   }, [remoteStream]);
 
-  // Set up remote audio stream
+  // Set up remote audio stream with cross-device compatibility
   useEffect(() => {
     console.log("🔊 REMOTE STREAM EFFECT TRIGGERED:", {
       hasRemoteAudioRef: !!remoteAudioRef.current,
@@ -598,16 +598,39 @@ const CallDialog: FC<CallDialogProps> = ({
         });
       });
 
-      if (remoteAudioRef.current.paused) {
-        console.log("🔊 Starting audio playback from useEffect...");
-        remoteAudioRef.current.play().catch((error) => {
-          console.error("❌ Remote audio play failed:", error);
-        });
-      } else {
-        console.log(
-          "🔊 Audio already playing from useEffect, skipping play call"
-        );
-      }
+      // Handle autoplay for cross-device calls
+      const startAudio = async () => {
+        try {
+          if (remoteAudioRef.current && remoteAudioRef.current.paused) {
+            console.log("🔊 Starting audio playback from useEffect...");
+
+            // For cross-device calls, we need to handle autoplay restrictions
+            const playPromise = remoteAudioRef.current.play();
+            if (playPromise !== undefined) {
+              await playPromise;
+              console.log("✅ Audio started successfully");
+            }
+          } else {
+            console.log(
+              "🔊 Audio already playing from useEffect, skipping play call"
+            );
+          }
+        } catch (error: any) {
+          console.warn(
+            "⚠️ Autoplay failed (common on mobile/cross-device):",
+            error
+          );
+
+          // Show user-friendly message about audio
+          if (error.name === "NotAllowedError") {
+            console.log("📱 Mobile autoplay blocked - user needs to interact");
+            // You could show a "Tap to enable audio" button here
+          }
+        }
+      };
+
+      // Try to start audio immediately
+      startAudio();
 
       audioSetupComplete.current = true;
       console.log("🔊 Audio setup marked as complete from useEffect");
@@ -1008,6 +1031,47 @@ const CallDialog: FC<CallDialogProps> = ({
     }
   };
 
+  // Handle audio test for cross-device calls
+  const handleAudioTest = async () => {
+    console.log("🔊 Testing audio for cross-device call...");
+
+    if (remoteAudioRef.current && remoteStream) {
+      try {
+        // Ensure audio element is properly configured
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.volume = 1.0;
+
+        // Try to play audio
+        await remoteAudioRef.current.play();
+        console.log("✅ Audio test successful");
+
+        // Show success message
+        alert("Audio test successful! You should hear the other person now.");
+      } catch (error: any) {
+        console.error("❌ Audio test failed:", error);
+
+        if (error.name === "NotAllowedError") {
+          alert(
+            "Audio blocked by browser. Please check your device settings and try again."
+          );
+        } else {
+          alert("Audio test failed. Please check your device audio settings.");
+        }
+      }
+    } else {
+      alert("No audio stream available for testing.");
+    }
+  };
+
+  // Check if this is a cross-device call
+  const isCrossDeviceCall = useMemo(() => {
+    if (!remoteStream) return false;
+
+    const audioTracks = remoteStream.getAudioTracks();
+    // Cross-device calls often have muted tracks due to security restrictions
+    return audioTracks.some((track) => track.muted);
+  }, [remoteStream]);
+
   if (!isOpen) return null;
 
   return (
@@ -1059,12 +1123,43 @@ const CallDialog: FC<CallDialogProps> = ({
           {isCallActive && (
             <p className="text-xs text-gray-500 mt-1">{connectionStatus}</p>
           )}
-          {isCallActive && remoteStream && (
-            <p className="text-green-600 text-sm mt-1">
-              {isActuallyVideoCall
-                ? "📹 Video & Audio Connected"
-                : "🎵 Audio Connected"}
-            </p>
+
+          {/* Enhanced Connection Status for Cross-Device Calls */}
+          {isCallActive && (
+            <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="text-xs text-gray-600 space-y-1">
+                <div className="flex justify-between">
+                  <span>Connection Type:</span>
+                  <span className="font-medium">
+                    {isCrossDeviceCall ? "Cross-Device" : "Same-Network"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Audio Status:</span>
+                  <span
+                    className={`font-medium ${
+                      remoteStream?.getAudioTracks().some((t) => t.enabled)
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {remoteStream?.getAudioTracks().some((t) => t.enabled)
+                      ? "Active"
+                      : "Inactive"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Stream Health:</span>
+                  <span
+                    className={`font-medium ${
+                      remoteStream?.active ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {remoteStream?.active ? "Healthy" : "Unhealthy"}
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Show fallback notification if video call became audio */}
@@ -1075,6 +1170,24 @@ const CallDialog: FC<CallDialogProps> = ({
                 ⚠️ Video unavailable, audio-only mode
               </p>
             )}
+
+          {/* Cross-device audio notification */}
+          {isCrossDeviceCall && (
+            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-700 text-sm text-center mb-2">
+                📱 Cross-device call detected
+              </p>
+              <button
+                onClick={handleAudioTest}
+                className="w-full bg-blue-500 text-white text-xs px-3 py-2 rounded hover:bg-blue-600 transition-colors"
+              >
+                🔊 Test Audio
+              </button>
+              <p className="text-blue-600 text-xs text-center mt-1">
+                Tap to ensure audio is working
+              </p>
+            </div>
+          )}
           {isConnecting && (
             <p className="text-blue-600 text-sm mt-2">Connecting...</p>
           )}
