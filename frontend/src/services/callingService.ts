@@ -35,7 +35,6 @@ class CallingService {
   private pendingOffer: any = null; // Queue for offers received before peer connection is ready
   private pendingIceCandidates: RTCIceCandidate[] = []; // Buffer ICE candidates until remote description is set
   private sentIceCandidates: Set<string> = new Set(); // Track sent ICE candidates to prevent duplicates
-  private trackMonitorInterval: number | null = null;
   private eventCounts = { callAccepted: 0, callConnected: 0 };
   private screenShareStream: MediaStream | null = null;
   private screenShareTrack: MediaStreamTrack | null = null;
@@ -391,7 +390,7 @@ class CallingService {
           "🚨 This suggests event duplication or wrong event routing!"
         );
         console.log("🚨 Event count:", this.eventCounts.callAccepted);
-        
+
         // CRITICAL FIX: Don't process duplicate events and reset the connection
         if (this.eventCounts.callAccepted > 3) {
           console.log("🚨 Too many duplicate events, resetting connection...");
@@ -399,7 +398,7 @@ class CallingService {
           this.cleanupCall();
           return;
         }
-        
+
         // For 2-3 events, just ignore them
         return;
       }
@@ -724,6 +723,12 @@ class CallingService {
     this.eventCounts.callConnected = 0;
     console.log("🔄 Event counters reset for new call");
 
+    // CRITICAL FIX: Ensure clean state by cleaning up any existing call
+    if (this.activeCall || this.peerConnection) {
+      console.log("🔄 Cleaning up existing call before starting new one...");
+      this.cleanupCall();
+    }
+
     try {
       // Ensure we have a valid socket connection
       await this.ensureSocket();
@@ -838,6 +843,12 @@ class CallingService {
       this.eventCounts.callAccepted = 0;
       this.eventCounts.callConnected = 0;
       console.log("🔄 Event counters reset for accepted call");
+
+      // CRITICAL FIX: Ensure clean state by cleaning up any existing call
+      if (this.activeCall || this.peerConnection) {
+        console.log("🔄 Cleaning up existing call before accepting new one...");
+        this.cleanupCall();
+      }
 
       // Ensure we have a valid socket connection
       await this.ensureSocket();
@@ -2027,57 +2038,44 @@ class CallingService {
   private cleanupCall() {
     console.log("=== CALLING SERVICE: cleanupCall ===");
 
-    // Stop all media streams
-    if (this.localStream) {
-      this.localStream.getTracks().forEach((track) => track.stop());
-      this.localStream = null;
-    }
-
-    if (this.remoteStream) {
-      this.remoteStream.getTracks().forEach((track) => track.stop());
-      this.remoteStream = null;
-    }
-
-    // Clean up screen sharing
-    this.stopScreenShare();
-
-    // Close peer connection
-    if (this.peerConnection) {
-      this.peerConnection.close();
-      this.peerConnection = null;
-    }
-
-    // Clear track monitor interval
-    if (this.trackMonitorInterval) {
-      clearInterval(this.trackMonitorInterval);
-      this.trackMonitorInterval = null;
-      console.log("✅ Track monitor interval cleared");
-    }
-
-    // Reset call state
-    this.activeCall = null;
-    this.callStartTime = null;
-
-    // Clear sent ICE candidates tracking
-    this.sentIceCandidates.clear();
-
-    // Clean up localStorage
-    try {
-      localStorage.removeItem("lastInitiatedCall");
-      console.log("✅ Call data removed from localStorage");
-    } catch (error) {
-      console.warn("⚠️ Could not remove call data from localStorage:", error);
-    }
-
-    // Stop ringtones
-    this.stopRingtone();
-    this.stopCallRingtone();
-
     // Stop connection monitoring
     if (this.connectionMonitorInterval) {
       clearInterval(this.connectionMonitorInterval);
       this.connectionMonitorInterval = null;
       console.log("🔍 Connection monitoring stopped");
+    }
+
+    // CRITICAL FIX: Properly close peer connection to reset WebRTC state
+    if (this.peerConnection) {
+      console.log("🔄 Closing peer connection to reset WebRTC state...");
+
+      // Close all data channels first (if any exist)
+      // Note: getDataChannels() is not available in standard WebRTC API
+      // Data channels are managed separately if needed
+
+      // Close the peer connection
+      this.peerConnection.close();
+      this.peerConnection = null;
+      console.log("✅ Peer connection closed and reset");
+    }
+
+    // CRITICAL FIX: Stop all media tracks to prevent interference
+    if (this.localStream) {
+      console.log("🔄 Stopping local media tracks...");
+      this.localStream.getTracks().forEach((track) => {
+        track.stop();
+        console.log(`✅ Stopped ${track.kind} track:`, track.id);
+      });
+      this.localStream = null;
+    }
+
+    if (this.remoteStream) {
+      console.log("🔄 Stopping remote media tracks...");
+      this.remoteStream.getTracks().forEach((track) => {
+        track.stop();
+        console.log(`✅ Stopped ${track.kind} track:`, track.id);
+      });
+      this.remoteStream = null;
     }
 
     // Clear pending offers
@@ -2097,6 +2095,13 @@ class CallingService {
     this.eventCounts.callAccepted = 0;
     this.eventCounts.callConnected = 0;
     console.log("🔄 Event counters reset");
+
+    // Clear active call
+    this.activeCall = null;
+    this.callStartTime = null;
+
+    // Clear sent ICE candidates
+    this.sentIceCandidates.clear();
 
     console.log("✅ Call resources cleaned up");
   }
