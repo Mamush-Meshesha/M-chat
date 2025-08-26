@@ -1,13 +1,36 @@
 const io = require("socket.io")(process.env.PORT || 8000, {
   cors: {
-    origin: "*", // Allow all origins for development
-    methods: ["GET", "POST"],
+    origin: [
+      "https://m-chat-azure.vercel.app",
+      "https://m-chat-azure.vercel.app/",
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "*", // Keep wildcard for development
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   },
   transports: ["polling", "websocket"], // Prioritize polling for Render compatibility
   allowEIO3: true, // Allow Engine.IO v3 clients
   pingTimeout: 60000, // Increase ping timeout for Render
   pingInterval: 25000, // Increase ping interval for Render
+});
+
+// Add CORS headers for all responses
+io.use((socket, next) => {
+  // Set CORS headers for all socket connections
+  socket.handshake.headers["Access-Control-Allow-Origin"] =
+    "https://m-chat-azure.vercel.app";
+  socket.handshake.headers["Access-Control-Allow-Credentials"] = "true";
+  socket.handshake.headers["Access-Control-Allow-Methods"] =
+    "GET, POST, PUT, DELETE, OPTIONS";
+  socket.handshake.headers["Access-Control-Allow-Headers"] =
+    "Content-Type, Authorization, X-Requested-With";
+
+  next();
 });
 
 // Log server startup
