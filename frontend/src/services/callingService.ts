@@ -33,7 +33,6 @@ class CallingService {
   private ringingSound: HTMLAudioElement | null = null;
   private currentPlayingSound: HTMLAudioElement | null = null;
   private pendingOffer: any = null; // Queue for offers received before peer connection is ready
-  private pendingAnswer: any = null;
   private pendingIceCandidates: RTCIceCandidate[] = []; // Buffer ICE candidates until remote description is set
   private sentIceCandidates: Set<string> = new Set(); // Track sent ICE candidates to prevent duplicates
   private trackMonitorInterval: number | null = null;
@@ -586,8 +585,9 @@ class CallingService {
         !this.peerConnection ||
         this.peerConnection.signalingState !== "have-local-offer"
       ) {
-        console.log("⏳ Not ready for answer, queuing it...");
-        this.pendingAnswer = data;
+        console.log("⏳ Not ready for answer, waiting for peer connection...");
+        // Store the answer data to process later when ready
+        setTimeout(() => this.handleAnswer(data), 1000);
         return;
       }
 
@@ -2046,10 +2046,9 @@ class CallingService {
       console.log("🔍 Connection monitoring stopped");
     }
 
-    // Clear pending offers and answers
+    // Clear pending offers
     this.pendingOffer = null;
-    this.pendingAnswer = null;
-    console.log("🧹 Pending offers and answers cleared");
+    console.log("🧹 Pending offers cleared");
 
     // Clear pending ICE candidates
     if (this.pendingIceCandidates.length > 0) {
@@ -2292,7 +2291,6 @@ class CallingService {
     try {
       // Store current state
       const currentLocalStream = this.localStream;
-      const currentCallData = this.activeCall?.callData;
 
       // Clean up old connection
       if (this.peerConnection) {
@@ -2303,7 +2301,6 @@ class CallingService {
 
       // Clear any pending data
       this.pendingOffer = null;
-      this.pendingAnswer = null;
       this.pendingIceCandidates = [];
       this.sentIceCandidates.clear();
 
