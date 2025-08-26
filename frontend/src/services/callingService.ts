@@ -545,13 +545,15 @@ class CallingService {
 
     // Handle WebRTC offer
     this.socket.on("offer", async (data) => {
-      console.log("🎯 CALLING SERVICE: Received offer:", data);
+      console.log("🎯 === FRONTEND: OFFER RECEIVED ===");
       console.log("🎯 Offer data:", {
         hasOffer: !!data.offer,
         hasSenderId: !!data.senderId,
         receiverId: data.receiverId,
         offerType: data.offer?.type,
         offerSdp: data.offer?.sdp?.substring(0, 100) + "...",
+        timestamp: data.timestamp,
+        isCrossDevice: data.isCrossDevice,
       });
       console.log("🎯 Current state before handling offer:", {
         hasPeerConnection: !!this.peerConnection,
@@ -559,10 +561,17 @@ class CallingService {
         hasActiveCall: !!this.activeCall,
         peerConnectionState: this.peerConnection?.connectionState,
         peerConnectionIceState: this.peerConnection?.iceConnectionState,
+        activeCallStatus: this.activeCall?.callData.status,
       });
       console.log("🎯 Socket ID:", this.socket?.id);
       console.log("🎯 Receiver ID from offer:", data.receiverId);
       console.log("🎯 Current user ID:", this.getCurrentUserId());
+      console.log("🎯 User role in call:", {
+        isReceiver: this.activeCall?.callData.receiverId === this.getCurrentUserId(),
+        isCaller: this.activeCall?.callData.callerId === this.getCurrentUserId(),
+        activeCallReceiverId: this.activeCall?.callData.receiverId,
+        activeCallCallerId: this.activeCall?.callData.callerId,
+      });
 
       // Verify this offer is for us
       if (data.receiverId !== this.getCurrentUserId()) {
@@ -572,6 +581,7 @@ class CallingService {
           "Got:",
           data.receiverId
         );
+        console.log("🎯 === END FRONTEND: OFFER PROCESSING (IGNORED) ===");
         return;
       }
 
@@ -584,12 +594,14 @@ class CallingService {
         console.log(
           "⏳ Offer queued, will process when peer connection is ready"
         );
+        console.log("🎯 === END FRONTEND: OFFER PROCESSING (QUEUED) ===");
         return;
       }
 
       console.log("✅ Peer connection ready, processing offer immediately...");
       // Process the offer immediately if peer connection is ready
       await this.handleOffer(data);
+      console.log("🎯 === END FRONTEND: OFFER PROCESSING (COMPLETED) ===");
     });
 
     // Handle WebRTC answer
@@ -1460,10 +1472,20 @@ class CallingService {
 
   private async handleOffer(data: any) {
     try {
+      console.log("🔄 === FRONTEND: HANDLE OFFER STARTED ===");
       console.log("🔄 handleOffer called with data:", data);
+      console.log("🔄 Offer details:", {
+        hasOffer: !!data.offer,
+        offerType: data.offer?.type,
+        offerSdp: data.offer?.sdp?.substring(0, 100) + "...",
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        timestamp: data.timestamp,
+      });
 
       if (!this.peerConnection) {
         console.error("❌ No peer connection available in handleOffer");
+        console.log("🔄 === FRONTEND: HANDLE OFFER FAILED (NO PEER CONNECTION) ===");
         return;
       }
 
@@ -1472,6 +1494,8 @@ class CallingService {
         iceConnectionState: this.peerConnection.iceConnectionState,
         iceGatheringState: this.peerConnection.iceGatheringState,
         signalingState: this.peerConnection.signalingState,
+        hasLocalDescription: !!this.peerConnection.localDescription,
+        hasRemoteDescription: !!this.peerConnection.remoteDescription,
       });
 
       // Set the remote description (offer from caller)
@@ -1514,9 +1538,12 @@ class CallingService {
       } else {
         console.error("❌ Cannot send answer: missing socket or senderId");
       }
+
+      console.log("🔄 === FRONTEND: HANDLE OFFER COMPLETED SUCCESSFULLY ===");
     } catch (error: any) {
       console.error("❌ Error handling offer:", error);
       console.error("❌ Error details:", error.message, error.stack);
+      console.log("🔄 === FRONTEND: HANDLE OFFER FAILED WITH ERROR ===");
     }
   }
 
@@ -1940,6 +1967,7 @@ class CallingService {
   // Create and send WebRTC offer
   private async createAndSendOffer() {
     try {
+      console.log("🔄 === FRONTEND: CREATE AND SEND OFFER STARTED ===");
       console.log("🔄 createAndSendOffer called");
       console.log("🔄 peerConnection exists:", !!this.peerConnection);
       console.log("🔄 socket exists:", !!this.socket);
@@ -1951,6 +1979,7 @@ class CallingService {
         console.error(
           "❌ Cannot create offer: missing peer connection, socket, or active call"
         );
+        console.log("🔄 === FRONTEND: CREATE AND SEND OFFER FAILED (MISSING DEPENDENCIES) ===");
         return;
       }
 
@@ -2006,6 +2035,7 @@ class CallingService {
       console.log("🔄 Sending offer data:", offerData);
 
       this.socket.emit("offer", offerData);
+      console.log("✅ Offer emitted to socket server");
 
       // Also send a test event to verify the receiver is listening
       this.socket.emit("test", {
@@ -2014,13 +2044,16 @@ class CallingService {
         callerId: this.getCurrentUserId(),
         receiverId: this.activeCall.callData.receiverId,
       });
+      console.log("✅ Test event emitted to socket server");
 
       console.log(
         "✅ Offer sent to receiver:",
         this.activeCall.callData.receiverId
       );
+      console.log("🔄 === FRONTEND: CREATE AND SEND OFFER COMPLETED SUCCESSFULLY ===");
     } catch (error) {
       console.error("❌ Error creating and sending offer:", error);
+      console.log("🔄 === FRONTEND: CREATE AND SEND OFFER FAILED WITH ERROR ===");
     }
   }
 

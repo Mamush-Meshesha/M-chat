@@ -390,44 +390,89 @@ io.on("connection", (socket) => {
 
   // Handle WebRTC signaling with enhanced cross-device support
   socket.on("offer", (data) => {
-    console.log("🎯 SOCKET SERVER: Received offer:", {
+    console.log("🎯 === SOCKET SERVER: OFFER RECEIVED ===");
+    console.log("🎯 Offer data:", {
       receiverId: data.receiverId,
       hasOffer: !!data.offer,
       offerType: data.offer?.type,
       callId: data.callId,
+      fromSocketId: socket.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log all active users for debugging
+    console.log("🎯 SOCKET SERVER: All active users:", {
+      totalUsers: activeUsers.length,
+      users: activeUsers.map((u) => ({
+        userId: u.userId,
+        socketId: u.socketId,
+        isReceiver: u.userId === data.receiverId,
+        isSender: u.socketId === socket.id,
+      })),
     });
 
     const receiver = getUser(data.receiverId);
+    console.log("🎯 SOCKET SERVER: Receiver lookup result:", {
+      requestedReceiverId: data.receiverId,
+      receiverFound: !!receiver,
+      receiverDetails: receiver ? {
+        userId: receiver.userId,
+        socketId: receiver.socketId,
+        isOnline: !!receiver.socketId,
+      } : null,
+    });
+
     if (receiver) {
       // Find the sender's user ID from active users
       const sender = activeUsers.find((u) => u.socketId === socket.id);
       const senderId = sender ? sender.userId : null;
 
-      console.log("🎯 SOCKET SERVER: Forwarding offer to receiver:", {
-        receiverSocketId: receiver.socketId,
-        senderId: senderId,
-        callId: data.callId,
+      console.log("🎯 SOCKET SERVER: Sender lookup result:", {
+        senderSocketId: socket.id,
+        senderFound: !!sender,
+        senderUserId: senderId,
       });
 
-      // Forward the offer with enhanced metadata for cross-device calls
-      io.to(receiver.socketId).emit("offer", {
-        ...data,
+      console.log("🎯 SOCKET SERVER: Forwarding offer to receiver:", {
+        receiverSocketId: receiver.socketId,
+        receiverUserId: receiver.userId,
         senderId: senderId,
-        timestamp: Date.now(),
-        isCrossDevice: true, // Flag for cross-device handling
+        callId: data.callId,
+        offerType: data.offer?.type,
       });
+
+      // CRITICAL: Use direct socket emission instead of io.to() for better reliability
+      const receiverSocket = io.sockets.sockets.get(receiver.socketId);
+      if (receiverSocket) {
+        receiverSocket.emit("offer", {
+          ...data,
+          senderId: senderId,
+          timestamp: Date.now(),
+          isCrossDevice: true, // Flag for cross-device handling
+        });
+        console.log("✅ SOCKET SERVER: Offer sent directly to receiver socket");
+      } else {
+        console.log("❌ SOCKET SERVER: Receiver socket not found, trying io.to() fallback");
+        // Fallback to io.to() method
+        io.to(receiver.socketId).emit("offer", {
+          ...data,
+          senderId: senderId,
+          timestamp: Date.now(),
+          isCrossDevice: true,
+        });
+        console.log("✅ SOCKET SERVER: Offer sent via io.to() fallback");
+      }
 
       console.log("✅ SOCKET SERVER: Offer forwarded successfully");
     } else {
-      console.log(
-        "❌ SOCKET SERVER: Receiver not found for offer:",
-        data.receiverId
-      );
-      console.log(
-        "❌ SOCKET SERVER: Available users:",
-        activeUsers.map((u) => ({ userId: u.userId, socketId: u.socketId }))
-      );
+      console.log("❌ SOCKET SERVER: Receiver not found for offer:", {
+        requestedReceiverId: data.receiverId,
+        activeUsersCount: activeUsers.length,
+        availableUserIds: activeUsers.map((u) => u.userId),
+        timestamp: new Date().toISOString(),
+      });
     }
+    console.log("🎯 === END SOCKET SERVER: OFFER PROCESSING ===");
   });
 
   socket.on("answer", (data) => {
