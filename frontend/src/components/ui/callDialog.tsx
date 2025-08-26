@@ -96,6 +96,44 @@ const CallDialog: FC<CallDialogProps> = ({
     };
   }, [isIncoming, isOpen]);
 
+  // CRITICAL FIX: Handle user interaction to enable audio playback
+  useEffect(() => {
+    if (isOpen && remoteStream && remoteAudioRef.current) {
+      const handleUserInteraction = () => {
+        console.log(
+          "👆 User interaction detected, attempting to start audio..."
+        );
+        if (remoteAudioRef.current && remoteAudioRef.current.paused) {
+          remoteAudioRef.current
+            .play()
+            .then(() => {
+              console.log(
+                "✅ Audio started successfully after user interaction"
+              );
+            })
+            .catch((error) => {
+              console.error(
+                "❌ Audio start failed even after user interaction:",
+                error
+              );
+            });
+        }
+      };
+
+      // Add event listeners for user interactions
+      const events = ["click", "touchstart", "keydown", "mousedown"];
+      events.forEach((event) => {
+        document.addEventListener(event, handleUserInteraction, { once: true });
+      });
+
+      return () => {
+        events.forEach((event) => {
+          document.removeEventListener(event, handleUserInteraction);
+        });
+      };
+    }
+  }, [isOpen, remoteStream]);
+
   // Handle call duration timer
   useEffect(() => {
     if (isCallActive) {
@@ -187,6 +225,15 @@ const CallDialog: FC<CallDialogProps> = ({
         "🎵 Stream tracks:",
         stream.getTracks().map((t) => ({ kind: t.kind, enabled: t.enabled }))
       );
+
+      // CRITICAL FIX: Prevent duplicate stream assignments that cause audio interruption
+      if (remoteStream && remoteStream.id === stream.id) {
+        console.log(
+          "🔊 Duplicate stream detected, skipping to prevent audio interruption"
+        );
+        return;
+      }
+
       setRemoteStream(stream);
 
       // IMMEDIATE audio setup - don't wait for useEffect
@@ -209,17 +256,16 @@ const CallDialog: FC<CallDialogProps> = ({
 
         // Prevent multiple audio setups
         audioSetupComplete.current = true;
-        console.log("🔊 Audio setup marked as complete IMMEDIATELY");
+        console.log("�� Audio setup marked as complete IMMEDIATELY");
 
-        // Check if this is a duplicate stream (same ID)
-        if (
-          remoteAudioRef.current.srcObject &&
-          (remoteAudioRef.current.srcObject as MediaStream).id === stream.id
-        ) {
-          console.log("🔊 Duplicate stream detected, skipping audio setup");
-          return;
+        // CRITICAL FIX: Stop any existing audio playback before setting new stream
+        if (remoteAudioRef.current.srcObject) {
+          console.log("🔊 Stopping existing audio to prevent interruption");
+          remoteAudioRef.current.pause();
+          remoteAudioRef.current.currentTime = 0;
         }
 
+        // Set the new stream
         remoteAudioRef.current.srcObject = stream;
 
         // CRITICAL: Unmute the audio element and ensure tracks are enabled
@@ -281,15 +327,35 @@ const CallDialog: FC<CallDialogProps> = ({
           }
         });
 
-        // Only play if not already playing
-        if (remoteAudioRef.current.paused) {
-          console.log("🔊 Starting audio playback...");
-          remoteAudioRef.current.play().catch((error) => {
-            console.error("❌ Immediate audio play failed:", error);
-          });
-        } else {
-          console.log("🔊 Audio already playing, skipping play call");
-        }
+        // CRITICAL FIX: Wait for the stream to be ready before playing
+        const startAudioPlayback = () => {
+          if (remoteAudioRef.current && remoteAudioRef.current.paused) {
+            console.log("🔊 Starting audio playback...");
+            remoteAudioRef.current
+              .play()
+              .then(() => {
+                console.log("✅ Remote audio started playing successfully");
+                console.log("🎵 Audio element state:", {
+                  paused: remoteAudioRef.current?.paused,
+                  currentTime: remoteAudioRef.current?.currentTime,
+                  volume: remoteAudioRef.current?.volume,
+                  muted: remoteAudioRef.current?.muted,
+                });
+              })
+              .catch((error) => {
+                console.error("❌ Audio play failed:", error);
+                // If autoplay fails, try again after user interaction
+                console.log(
+                  "🔄 Autoplay failed, will retry on user interaction"
+                );
+              });
+          } else {
+            console.log("🔊 Audio already playing, skipping play call");
+          }
+        };
+
+        // Try to start playback immediately
+        startAudioPlayback();
 
         // Special handling for different device calls
         if (isDifferentDeviceCall) {

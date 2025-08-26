@@ -377,6 +377,8 @@ class CallingService {
         console.log(
           "🚨 This suggests event duplication or wrong event routing!"
         );
+        // CRITICAL FIX: Don't process duplicate events
+        return;
       }
 
       // Only process this if we're actually the caller
@@ -386,14 +388,9 @@ class CallingService {
       ) {
         console.log("✅ We are the caller, processing callAccepted event");
 
-        // Check for call type corruption
-        if (this.activeCall.callData.callType !== "video") {
-          console.log(
-            "🚨 CRITICAL: Call type corrupted! Expected 'video', got:",
-            this.activeCall.callData.callType
-          );
-          console.log("🚨 This will prevent video tracks from being sent!");
-        }
+        // CRITICAL FIX: Preserve the original call type from the active call
+        const originalCallType = this.activeCall.callData.callType;
+        console.log("✅ Original call type preserved:", originalCallType);
 
         if (this.activeCall) {
           this.activeCall.callData.status = "active";
@@ -1368,11 +1365,47 @@ class CallingService {
         remoteDescriptionType: pc.remoteDescription?.type,
       });
 
-      // Check if connection is stuck
+      // CRITICAL FIX: Check if connection is stuck and needs intervention
       if (pc.connectionState === "new" && pc.iceConnectionState === "new") {
         console.warn(
           "⚠️ Connection stuck in 'new' state - ICE candidates may not be exchanging"
         );
+
+        // If stuck for more than 10 seconds, try to intervene
+        const stuckTime = Date.now() - (this.callStartTime || Date.now());
+        if (stuckTime > 10000) {
+          // 10 seconds
+          console.log(
+            "🚨 Connection stuck for too long, attempting recovery..."
+          );
+
+          // Try ICE restart first
+          try {
+            pc.restartIce();
+            console.log("✅ ICE restart initiated to resolve stuck connection");
+          } catch (restartError) {
+            console.warn("⚠️ ICE restart failed:", restartError);
+
+            // If ICE restart fails, try recreating the peer connection
+            console.log(
+              "🔄 ICE restart failed, attempting to recreate peer connection..."
+            );
+            this.recreatePeerConnection();
+          }
+        }
+      }
+
+      // Check for ICE connection failures
+      if (pc.iceConnectionState === "failed") {
+        console.error("❌ ICE connection failed - attempting recovery...");
+        try {
+          pc.restartIce();
+          console.log("✅ ICE restart initiated after failure");
+        } catch (restartError) {
+          console.warn("⚠️ ICE restart failed after failure:", restartError);
+          // If restart fails, recreate the connection
+          this.recreatePeerConnection();
+        }
       }
     }, 5000); // Check every 5 seconds
 
@@ -1514,6 +1547,19 @@ class CallingService {
       );
       await this.processBufferedIceCandidates();
 
+      // CRITICAL FIX: Force ICE restart if connection is stuck in "new" state
+      if (this.peerConnection.iceConnectionState === "new") {
+        console.log(
+          "🔄 ICE connection stuck in 'new' state, forcing restart..."
+        );
+        try {
+          await this.peerConnection.restartIce();
+          console.log("✅ ICE restart initiated");
+        } catch (restartError) {
+          console.warn("⚠️ ICE restart failed:", restartError);
+        }
+      }
+
       // Debug: Check what tracks are available after setting remote description
       console.log("🎵 After setting remote description:");
       console.log(
@@ -1644,6 +1690,35 @@ class CallingService {
       console.log("🧊 Connection state:", this.peerConnection.connectionState);
       console.log("🧊 Signaling state:", this.peerConnection.signalingState);
 
+      // CRITICAL FIX: Check if connection is stuck and needs intervention
+      if (
+        this.peerConnection.iceConnectionState === "new" &&
+        this.peerConnection.connectionState === "new"
+      ) {
+        console.log(
+          "⚠️ Connection appears stuck in 'new' state after ICE candidate"
+        );
+
+        // Wait a bit to see if it progresses naturally
+        setTimeout(() => {
+          if (
+            this.peerConnection &&
+            this.peerConnection.iceConnectionState === "new" &&
+            this.peerConnection.connectionState === "new"
+          ) {
+            console.log("🚨 Connection still stuck, attempting ICE restart...");
+            try {
+              this.peerConnection.restartIce();
+              console.log(
+                "✅ ICE restart initiated to resolve stuck connection"
+              );
+            } catch (restartError) {
+              console.warn("⚠️ ICE restart failed:", restartError);
+            }
+          }
+        }, 2000); // Wait 2 seconds before intervention
+      }
+
       // Process any buffered ICE candidates
       this.processBufferedIceCandidates();
     } catch (error) {
@@ -1658,6 +1733,17 @@ class CallingService {
         );
       } else {
         console.error("❌ Error handling ICE candidate:", error);
+
+        // CRITICAL FIX: If ICE candidate handling fails repeatedly, try to recover
+        if (
+          this.peerConnection &&
+          this.peerConnection.iceConnectionState === "failed"
+        ) {
+          console.log(
+            "🔄 ICE connection failed, attempting to recreate peer connection..."
+          );
+          await this.recreatePeerConnection();
+        }
       }
     }
   }
@@ -2201,49 +2287,57 @@ class CallingService {
 
   // Recreate peer connection when signaling state gets corrupted
   private async recreatePeerConnection() {
+    console.log("🔄 === RECREATING PEER CONNECTION ===");
+
     try {
-      console.log(
-        "🔄 Recreating peer connection due to signaling state issues..."
-      );
+      // Store current state
+      const currentLocalStream = this.localStream;
+      const currentCallData = this.activeCall?.callData;
 
       // Clean up old connection
       if (this.peerConnection) {
+        console.log("🔄 Closing old peer connection...");
         this.peerConnection.close();
         this.peerConnection = null;
       }
 
-      // Wait a bit for cleanup
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Clear any pending data
+      this.pendingOffer = null;
+      this.pendingAnswer = null;
+      this.pendingIceCandidates = [];
+      this.sentIceCandidates.clear();
 
       // Create new peer connection
+      console.log("🔄 Creating new peer connection...");
       this.peerConnection = this.createPeerConnection();
 
-      // Re-add local stream if available
-      if (this.localStream) {
-        this.localStream.getTracks().forEach((track) => {
-          if (this.peerConnection) {
-            this.peerConnection.addTrack(track, this.localStream!);
-          }
+      // Re-add local stream tracks
+      if (currentLocalStream && this.peerConnection) {
+        console.log("🔄 Re-adding local stream tracks...");
+        currentLocalStream.getTracks().forEach((track) => {
+          this.peerConnection!.addTrack(track, currentLocalStream);
         });
+      }
+
+      // Update active call with new peer connection
+      if (this.activeCall) {
+        this.activeCall.peerConnection = this.peerConnection;
+        console.log("✅ Active call updated with new peer connection");
       }
 
       console.log("✅ Peer connection recreated successfully");
 
       // If we have a pending offer, process it now
       if (this.pendingOffer) {
-        console.log("🔄 Processing pending offer with new connection...");
+        console.log("🔄 Processing pending offer with new peer connection...");
         await this.handleOffer(this.pendingOffer);
         this.pendingOffer = null;
       }
-
-      // If we have a pending answer, process it now
-      if (this.pendingAnswer) {
-        console.log("🔄 Processing pending answer with new connection...");
-        await this.handleAnswer(this.pendingAnswer);
-        this.pendingAnswer = null;
-      }
-    } catch (error: any) {
+    } catch (error) {
       console.error("❌ Error recreating peer connection:", error);
+      // If recreation fails, try to clean up and notify
+      this.cleanupCall();
+      this.onCallFailed?.({ reason: "Failed to recreate connection" });
     }
   }
 

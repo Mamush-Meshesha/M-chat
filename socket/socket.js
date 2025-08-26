@@ -268,24 +268,11 @@ io.on("connection", (socket) => {
 
         console.log("✅ New call data created:", newCallData);
 
-        // Notify both parties
-        const callerSocket = io.sockets.sockets.get(caller.socketId);
-        if (callerSocket) {
-          callerSocket.emit("callAccepted", {
-            ...data,
-            receiverSocketId: receiver.socketId,
-            callId: newCallData.callId,
-          });
-          console.log(
-            "✅ callAccepted sent to specific caller socket (new call)"
-          );
-        } else {
-          console.log(
-            "❌ ERROR: Caller socket not found for ID (new call):",
-            caller.socketId
-          );
-        }
+        // CRITICAL FIX: Don't emit callAccepted again - the existing call data path above already handles this
+        // The caller will receive the callAccepted event from the existing call data path
+        // This prevents duplicate events that corrupt the call state
 
+        // Only notify receiver that call is now active
         const receiverSocket = io.sockets.sockets.get(receiver.socketId);
         if (receiverSocket) {
           receiverSocket.emit("callConnected", {
