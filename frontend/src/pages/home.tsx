@@ -339,7 +339,7 @@ const Home: FC<HomeProps> = () => {
         setIsCallDialogOpen(true);
 
         // Accept the call using calling service
-        const success = await callingService.acceptCall({
+        await callingService.acceptCall({
           callId: incomingCall.callId || "",
           callerId: incomingCall.callerId,
           receiverId: authUser._id,
@@ -349,13 +349,8 @@ const Home: FC<HomeProps> = () => {
           status: "ringing",
         });
 
-        if (success) {
-          console.log("✅ Call accepted successfully in calling service");
-          // The calling service will handle the call state changes
-        } else {
-          console.error("❌ Failed to accept call in calling service");
-          alert("Failed to accept call. Please try again.");
-        }
+        console.log("✅ Call accepted successfully in calling service");
+        // The calling service will handle the call state changes
       } catch (error) {
         console.error("❌ Error accepting call:", error);
         alert("Error accepting call. Please try again.");

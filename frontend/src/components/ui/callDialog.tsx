@@ -848,43 +848,37 @@ const CallDialog: FC<CallDialogProps> = ({
       }
 
       // Then accept the call using calling service
-      const success = await callingService.acceptCall(callData);
-      if (success) {
-        const stream = callingService.getLocalStream();
-        setLocalStream(stream);
-        setIsConnecting(false);
-        setIsCallActive(true);
-        console.log("✅ Call accepted successfully");
+      await callingService.acceptCall(callData);
 
-        // For video calls, ensure video elements are properly connected
-        if (callData.callType === "video" && stream) {
-          console.log("📹 Video call accepted, setting up video elements...");
-          // Small delay to ensure video elements are ready
-          setTimeout(() => {
-            if (localVideoRef.current && stream) {
-              localVideoRef.current.srcObject = stream;
-              console.log("✅ Local video element connected");
-              // Ensure video plays
-              localVideoRef.current
-                .play()
-                .catch((e) => console.log("Local video play:", e));
-            }
-          }, 100);
-        } else if (callData.callType === "audio" && stream) {
-          console.log("🎵 Audio call accepted, setting up audio elements...");
-          // For audio calls, ensure audio elements are connected
-          setTimeout(() => {
-            if (localAudioRef.current && stream) {
-              localAudioRef.current.srcObject = stream;
-              console.log("✅ Local audio element connected");
-            }
-          }, 100);
-        }
-      } else {
-        setIsConnecting(false);
-        console.error("❌ Failed to accept call");
-        // Don't show error message to user, just log it
-        return;
+      const stream = callingService.getLocalStream();
+      setLocalStream(stream);
+      setIsConnecting(false);
+      setIsCallActive(true);
+      console.log("✅ Call accepted successfully");
+
+      // For video calls, ensure video elements are properly connected
+      if (callData.callType === "video" && stream) {
+        console.log("📹 Video call accepted, setting up video elements...");
+        // Small delay to ensure video elements are ready
+        setTimeout(() => {
+          if (localVideoRef.current && stream) {
+            localVideoRef.current.srcObject = stream;
+            console.log("✅ Local video element connected");
+            // Ensure video plays
+            localVideoRef.current
+              .play()
+              .catch((e) => console.log("Local video play:", e));
+          }
+        }, 100);
+      } else if (callData.callType === "audio" && stream) {
+        console.log("🎵 Audio call accepted, setting up audio elements...");
+        // For audio calls, ensure audio elements are connected
+        setTimeout(() => {
+          if (localAudioRef.current && stream) {
+            localAudioRef.current.srcObject = stream;
+            console.log("✅ Local audio element connected");
+          }
+        }, 100);
       }
     } catch (error) {
       console.error("❌ Error accepting call:", error);

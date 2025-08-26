@@ -100,22 +100,15 @@ const Dashboardheader: FC<DashboardheaderProps> = ({
 
     try {
       // Initiate the call using calling service
-      const success = await callingService.initiateCall(callDataObj);
+      await callingService.initiateCall(currentUserChat._id, type);
 
-      if (success) {
-        console.log("✅ Call initiated successfully!");
-        // Keep connecting state - will be updated by call dialog
-        console.log("Call dialog state:", {
-          isOpen: isCallDialogOpen,
-          isCallActive,
-          callType: type,
-        });
-      } else {
-        console.log("❌ Call initiation failed");
-        setIsCallDialogOpen(false);
-
-        alert("Failed to initiate call. Please try again.");
-      }
+      console.log("✅ Call initiated successfully!");
+      // Keep connecting state - will be updated by call dialog
+      console.log("Call dialog state:", {
+        isOpen: isCallDialogOpen,
+        isCallActive,
+        callType: type,
+      });
     } catch (error) {
       console.error("❌ Error initiating call:", error);
       setIsCallDialogOpen(false);

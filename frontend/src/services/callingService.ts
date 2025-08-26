@@ -55,49 +55,6 @@ class CallingService {
     }
   }
 
-  // Create a call record in the backend
-  private async createCallRecord(callData: {
-    receiverId: string;
-    type: "outgoing" | "incoming";
-    callType: "audio" | "video";
-  }): Promise<string | null> {
-    try {
-      // Get token from localStorage
-      const authUser = localStorage.getItem("authUser");
-      const token = authUser ? JSON.parse(authUser).token : null;
-
-      if (!token) {
-        console.error("No authentication token found for call creation");
-        return null;
-      }
-
-      const response = await axios.post(
-        getApiUrl("/api/calls"),
-        {
-          receiverId: callData.receiverId,
-          type: callData.type,
-          callType: callData.callType,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success || response.data._id) {
-        console.log("Call record created:", response.data);
-        return response.data._id || response.data.call?._id;
-      } else {
-        console.error("Failed to create call record:", response.data);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error creating call record:", error);
-      return null;
-    }
-  }
-
   // Update call record status
   private async updateCallRecord(
     callId: string,
@@ -545,65 +502,17 @@ class CallingService {
 
     // Handle WebRTC offer
     this.socket.on("offer", async (data) => {
-      console.log("🎯 === FRONTEND: OFFER RECEIVED ===");
-      console.log("🎯 Offer data:", {
-        hasOffer: !!data.offer,
-        hasSenderId: !!data.senderId,
-        receiverId: data.receiverId,
-        offerType: data.offer?.type,
-        offerSdp: data.offer?.sdp?.substring(0, 100) + "...",
-        timestamp: data.timestamp,
-        isCrossDevice: data.isCrossDevice,
-      });
-      console.log("🎯 Current state before handling offer:", {
-        hasPeerConnection: !!this.peerConnection,
-        hasLocalStream: !!this.localStream,
-        hasActiveCall: !!this.activeCall,
-        peerConnectionState: this.peerConnection?.connectionState,
-        peerConnectionIceState: this.peerConnection?.iceConnectionState,
-        activeCallStatus: this.activeCall?.callData.status,
-      });
-      console.log("🎯 Socket ID:", this.socket?.id);
-      console.log("🎯 Receiver ID from offer:", data.receiverId);
-      console.log("🎯 Current user ID:", this.getCurrentUserId());
-      console.log("🎯 User role in call:", {
-        isReceiver:
-          this.activeCall?.callData.receiverId === this.getCurrentUserId(),
-        isCaller:
-          this.activeCall?.callData.callerId === this.getCurrentUserId(),
-        activeCallReceiverId: this.activeCall?.callData.receiverId,
-        activeCallCallerId: this.activeCall?.callData.callerId,
-      });
+      console.log("🎯 OFFER RECEIVED");
 
-      // Verify this offer is for us
       if (data.receiverId !== this.getCurrentUserId()) {
-        console.log(
-          "❌ Offer not for us, ignoring. Expected:",
-          this.getCurrentUserId(),
-          "Got:",
-          data.receiverId
-        );
-        console.log("🎯 === END FRONTEND: OFFER PROCESSING (IGNORED) ===");
+        console.log("❌ Offer not for us, ignoring.");
         return;
       }
 
-      console.log("✅ Offer is for us, processing...");
-
-      // If peer connection is not ready, queue the offer
-      if (!this.peerConnection) {
-        console.log("⏳ Peer connection not ready, queuing offer...");
-        this.pendingOffer = data;
-        console.log(
-          "⏳ Offer queued, will process when peer connection is ready"
-        );
-        console.log("🎯 === END FRONTEND: OFFER PROCESSING (QUEUED) ===");
-        return;
-      }
-
-      console.log("✅ Peer connection ready, processing offer immediately...");
-      // Process the offer immediately if peer connection is ready
-      await this.handleOffer(data);
-      console.log("🎯 === END FRONTEND: OFFER PROCESSING (COMPLETED) ===");
+      // The ONLY job here is to queue the offer.
+      // The actual processing happens in handleAcceptCall.
+      this.pendingOffer = data;
+      console.log("⏳ Offer has been queued, waiting for user to accept.");
     });
 
     // Handle WebRTC answer
@@ -726,386 +635,49 @@ class CallingService {
   onCallFailed?: (data: any) => void;
   onRemoteStream?: (stream: MediaStream) => void;
 
-  async initiateCall(
-    callData: Omit<CallData, "callId" | "status">
-  ): Promise<boolean> {
+  public async initiateCall(
+    receiverId: string,
+    callType: "audio" | "video"
+  ): Promise<void> {
     console.log("=== CALLING SERVICE: initiateCall ===");
-    console.log("Call data received:", callData);
+    console.log("📞 Initiating call to:", receiverId);
+    console.log("📞 Call type:", callType);
 
-    // CRITICAL FIX: Reset event counters for new call
+    // Clean up any existing call first
+    this.cleanupCall();
+
+    // Reset event counts
     this.eventCounts.callAccepted = 0;
     this.eventCounts.callConnected = 0;
-    console.log("🔄 Event counters reset for new call");
-
-    // CRITICAL FIX: Ensure clean state by cleaning up any existing call
-    if (this.activeCall || this.peerConnection) {
-      console.log("🔄 Cleaning up existing call before starting new one...");
-      this.cleanupCall();
-    }
 
     try {
-      // Ensure we have a valid socket connection
+      // Ensure socket connection
       await this.ensureSocket();
-      console.log("✅ Socket available, proceeding with media access...");
 
       // Get user media
       const constraints = {
         audio: true,
-        video: callData.callType === "video",
-      };
-
-      console.log("Requesting media with constraints:", constraints);
-      this.localStream = await this.requestMedia(constraints);
-      console.log("✅ Media stream obtained:", this.localStream);
-
-      // Create peer connection for caller
-      console.log("🔄 Creating peer connection for caller...");
-      this.peerConnection = this.createPeerConnection();
-      console.log("✅ Peer connection created");
-
-      // Add local stream tracks to peer connection
-      console.log("🎵 Adding local tracks to peer connection:");
-      this.localStream.getTracks().forEach((track, index) => {
-        console.log(`🎵 Adding track ${index}:`, {
-          kind: track.kind,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-          id: track.id,
-          label: track.label,
-        });
-        this.peerConnection!.addTrack(track, this.localStream!);
-      });
-
-      // Create call record in backend
-      console.log("Creating call record in backend...");
-      const callRecordId = await this.createCallRecord({
-        receiverId: callData.receiverId,
-        type: "outgoing",
-        callType: callData.callType,
-      });
-      console.log("✅ Call record created:", callRecordId);
-
-      // Set active call
-      const callId =
-        callRecordId ||
-        `${callData.callerId}-${callData.receiverId}-${Date.now()}`;
-
-      this.activeCall = {
-        localStream: this.localStream,
-        remoteStream: this.remoteStream,
-        peerConnection: this.peerConnection,
-        callData: {
-          ...callData,
-          callId,
-          status: "ringing",
-        },
-      };
-
-      console.log("✅ Active call set:", this.activeCall);
-
-      // Save call data to localStorage for recovery
-      try {
-        localStorage.setItem(
-          "lastInitiatedCall",
-          JSON.stringify({
-            ...callData,
-            callId,
-            status: "ringing",
-          })
-        );
-        console.log("✅ Call data saved to localStorage for recovery");
-      } catch (error) {
-        console.warn("⚠️ Could not save call data to localStorage:", error);
-      }
-
-      // Emit initiateCall event to socket server
-      console.log("Emitting initiateCall to socket server...");
-      if (this.socket) {
-        this.socket.emit("initiateCall", {
-          callerId: callData.callerId,
-          receiverId: callData.receiverId,
-          callType: callData.callType,
-          callId: callId,
-        });
-      }
-
-      console.log("✅ initiateCall event emitted to socket server");
-
-      // Start call ringtone for outgoing calls
-      this.startCallRingtone();
-
-      // Note: WebRTC offer will be sent after the receiver accepts the call
-      console.log("🔄 Call initiated, waiting for receiver to accept...");
-
-      return true;
-    } catch (error) {
-      console.error("❌ Error in initiateCall:", error);
-      this.cleanupCall();
-      return false;
-    }
-  }
-
-  async acceptCall(callData: CallData): Promise<boolean> {
-    try {
-      console.log("🔄 CALLING SERVICE: acceptCall called");
-      console.log("🔄 Call data received:", callData);
-      console.log("🔄 Current user ID:", this.getCurrentUserId());
-      console.log("🔄 Current socket ID:", this.socket?.id);
-
-      // CRITICAL FIX: Reset event counters for accepted call
-      this.eventCounts.callAccepted = 0;
-      this.eventCounts.callConnected = 0;
-      console.log("🔄 Event counters reset for accepted call");
-
-      // CRITICAL FIX: Ensure clean state by cleaning up any existing call
-      if (this.activeCall || this.peerConnection) {
-        console.log("🔄 Cleaning up existing call before accepting new one...");
-        this.cleanupCall();
-      }
-
-      // Ensure we have a valid socket connection
-      await this.ensureSocket();
-
-      // Get user media with specific constraints for localhost testing
-      const constraints = {
-        audio: {
-          echoCancellation: false, // Disable echo cancellation for localhost testing
-          noiseSuppression: false, // Disable noise suppression
-          autoGainControl: false, // Disable auto gain control
-        },
-        video:
-          callData.callType === "video"
-            ? {
-                width: { ideal: 1280, min: 640 },
-                height: { ideal: 720, min: 480 },
-                frameRate: { ideal: 30, min: 15 },
-              }
-            : false,
+        video: callType === "video",
       };
 
       console.log("🔄 Requesting media with constraints:", constraints);
-      console.log("🔄 Call type for media request:", callData.callType);
-      console.log("🔄 Will request video:", callData.callType === "video");
-      console.log("🔄 User role in call:", {
-        currentUserId: this.getCurrentUserId(),
-        callerId: callData.callerId,
-        receiverId: callData.receiverId,
-        isReceiver: callData.receiverId === this.getCurrentUserId(),
-        isCaller: callData.callerId === this.getCurrentUserId(),
-      });
+      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("✅ Media stream obtained:", this.localStream);
 
-      try {
-        this.localStream = await navigator.mediaDevices.getUserMedia(
-          constraints
-        );
-        console.log("✅ Media stream obtained:", this.localStream);
-        console.log(
-          "🎵 Audio tracks:",
-          this.localStream.getAudioTracks().map((t) => ({
-            kind: t.kind,
-            enabled: t.enabled,
-            muted: t.muted,
-            readyState: t.readyState,
-          }))
-        );
+      // Create call data
+      const callData: CallData = {
+        callerId: this.getCurrentUserId()!,
+        receiverId,
+        callType,
+        callerName: this.getCurrentUserName() || "Unknown User",
+        status: "ringing",
+        callId: this.generateCallId(),
+      };
 
-        if (callData.callType === "video") {
-          console.log(
-            "📹 Video tracks:",
-            this.localStream.getVideoTracks().map((t) => ({
-              kind: t.kind,
-              enabled: t.enabled,
-              muted: t.muted,
-              readyState: t.readyState,
-              width: t.getSettings().width,
-              height: t.getSettings().height,
-              frameRate: t.getSettings().frameRate,
-            }))
-          );
-        }
-      } catch (videoError: any) {
-        console.error("❌ Video access failed:", videoError);
-        console.error("❌ Video error name:", videoError.name);
-        console.error("❌ Video error message:", videoError.message);
-        console.error("❌ Video error details:", {
-          name: videoError.name,
-          message: videoError.message,
-          stack: videoError.stack,
-        });
-
-        // Check if it's a camera conflict error
-        if (
-          videoError.name === "NotAllowedError" ||
-          videoError.name === "PermissionDeniedError" ||
-          videoError.message.includes("Permission denied") ||
-          videoError.message.includes("camera") ||
-          videoError.message.includes("already in use")
-        ) {
-          console.log("🚨 CAMERA CONFLICT DETECTED!");
-          console.log("🚨 This often happens when testing on same computer");
-          console.log(
-            "🚨 Try: different browsers, incognito mode, or different devices"
-          );
-
-          // Wait a bit and retry with audio-only
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-
-        if (callData.callType === "video") {
-          console.log("🚨 CRITICAL: Video access failed on video call!");
-          console.log("🚨 User role:", this.getCurrentUserId());
-          console.log("🚨 Call data:", callData);
-
-          // Try to get just audio first
-          try {
-            const audioConstraints = {
-              audio: {
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-              },
-              video: false,
-            };
-
-            this.localStream = await navigator.mediaDevices.getUserMedia(
-              audioConstraints
-            );
-            console.log("✅ Audio-only stream obtained as fallback");
-            console.log(
-              "✅ Audio tracks:",
-              this.localStream.getAudioTracks().length
-            );
-
-            // Now try to add video separately with more permissive constraints
-            try {
-              console.log(
-                "🔄 Attempting to add video with relaxed constraints..."
-              );
-              const relaxedVideoConstraints = {
-                video: {
-                  width: { ideal: 640, min: 320 },
-                  height: { ideal: 480, min: 240 },
-                  frameRate: { ideal: 15, min: 10 },
-                },
-              };
-
-              const videoOnlyStream = await navigator.mediaDevices.getUserMedia(
-                relaxedVideoConstraints
-              );
-              const videoTracks = videoOnlyStream.getVideoTracks();
-
-              if (videoTracks.length > 0) {
-                console.log("✅ Video track obtained separately!");
-                videoTracks.forEach((track) => {
-                  if (this.localStream) {
-                    this.localStream.addTrack(track);
-                    console.log(
-                      "✅ Video track added to existing audio stream"
-                    );
-                  }
-                });
-              }
-            } catch (separateVideoError: any) {
-              console.log(
-                "⚠️ Separate video access also failed:",
-                separateVideoError.message
-              );
-              console.log("🔄 Continuing with audio-only...");
-            }
-          } catch (audioError) {
-            console.error("❌ Both video and audio access failed:", audioError);
-            throw new Error("Cannot access microphone or camera");
-          }
-        } else {
-          // Re-throw the original error for audio calls
-          throw videoError;
-        }
-      }
-
-      // Create peer connection
-      this.peerConnection = this.createPeerConnection();
-
-      // Add local stream tracks to peer connection
-      console.log("🎵 Adding tracks to peer connection:");
-      console.log(
-        "🎵 Total tracks in local stream:",
-        this.localStream.getTracks().length
-      );
-      console.log("🎵 Audio tracks:", this.localStream.getAudioTracks().length);
-      console.log("🎵 Video tracks:", this.localStream.getVideoTracks().length);
-
-      this.localStream.getTracks().forEach((track, index) => {
-        if (this.localStream && this.peerConnection) {
-          console.log(`🎵 Adding track ${index}:`, {
-            kind: track.kind,
-            enabled: track.enabled,
-            muted: track.muted,
-            readyState: track.readyState,
-            id: track.id,
-            label: track.label,
-          });
-
-          // Add event listeners to track lifecycle events
-          track.addEventListener("ended", () => {
-            console.log(
-              `🚨 TRACK ENDED: ${track.kind} track ${track.id} ended!`
-            );
-            console.log("🚨 Track state:", {
-              kind: track.kind,
-              enabled: track.enabled,
-              muted: track.muted,
-              readyState: track.readyState,
-            });
-          });
-
-          track.addEventListener("mute", () => {
-            console.log(
-              `🔇 TRACK MUTED: ${track.kind} track ${track.id} muted!`
-            );
-          });
-
-          track.addEventListener("unmute", () => {
-            console.log(
-              `🔊 TRACK UNMUTED: ${track.kind} track ${track.id} unmuted!`
-            );
-          });
-
-          // Monitor track removal from stream
-          const originalRemoveTrack = this.localStream.removeTrack.bind(
-            this.localStream
-          );
-          this.localStream.removeTrack = (trackToRemove) => {
-            console.log(
-              `🚨 TRACK REMOVED FROM STREAM: ${trackToRemove.kind} track ${trackToRemove.id}`
-            );
-            console.log("🚨 Removal stack trace:", new Error().stack);
-            return originalRemoveTrack(trackToRemove);
-          };
-
-          this.peerConnection.addTrack(track, this.localStream);
-        }
-      });
-
-      // Debug caller's local video setup
-      if (callData.callerId === this.getCurrentUserId()) {
-        console.log("🎯 CALLER DEBUG: Setting up local video display");
-        console.log("🎯 Local stream has tracks:", {
-          total: this.localStream.getTracks().length,
-          audio: this.localStream.getAudioTracks().length,
-          video: this.localStream.getVideoTracks().length,
-        });
-
-        if (this.localStream.getVideoTracks().length > 0) {
-          const videoTrack = this.localStream.getVideoTracks()[0];
-          console.log("🎯 Video track details:", {
-            id: videoTrack.id,
-            enabled: videoTrack.enabled,
-            readyState: videoTrack.readyState,
-            muted: videoTrack.muted,
-          });
-        }
-      }
+      // Create peer connection for caller
+      console.log("🔄 Creating peer connection for caller...");
+      this.createPeerConnection(callData);
+      console.log("✅ Peer connection created");
 
       // Set active call
       this.activeCall = {
@@ -1115,32 +687,43 @@ class CallingService {
         callData,
       };
 
-      console.log("✅ Call accepted successfully in calling service");
-      console.log("✅ Local stream:", !!this.localStream);
-      console.log("✅ Peer connection:", !!this.activeCall);
-      console.log("✅ Active call set:", !!this.activeCall);
-
-      // If we're the caller, create and send the offer
-      if (callData.callerId !== this.getCurrentUserId()) {
-        console.log("🔄 We're the receiver, waiting for offer from caller...");
-
-        // Check if we have a pending offer to process
-        if (this.pendingOffer) {
-          console.log(
-            "🔄 Processing pending offer after peer connection created..."
-          );
-          await this.processPendingOffer();
-        }
+      // Send call request
+      if (this.socket) {
+        this.socket.emit("callRequest", {
+          receiverId,
+          callerId: this.getCurrentUserId(),
+          callType,
+          callId: callData.callId,
+        });
+        console.log("✅ Call request sent");
       } else {
-        console.log("🔄 We're the caller, creating and sending offer...");
-        await this.createAndSendOffer();
+        throw new Error("Socket not available");
       }
-
-      return true;
     } catch (error) {
-      console.error("Failed to accept call:", error);
+      console.error("❌ Error initiating call:", error);
       this.cleanupCall();
-      return false;
+      throw error;
+    }
+  }
+
+  public async acceptCall(callData: CallData): Promise<void> {
+    console.log("=== CALLING SERVICE: acceptCall ===");
+    console.log("📞 Accepting call with data:", callData);
+
+    // Clean up any existing call first
+    this.cleanupCall();
+
+    // Reset event counts
+    this.eventCounts.callAccepted = 0;
+    this.eventCounts.callConnected = 0;
+
+    try {
+      // Use the new handleAcceptCall method
+      await this.handleAcceptCall(callData);
+      console.log("✅ Call accepted successfully");
+    } catch (error) {
+      console.error("❌ Error accepting call:", error);
+      this.cleanupCall();
     }
   }
 
@@ -1217,272 +800,50 @@ class CallingService {
     this.cleanupCall();
   }
 
-  private createPeerConnection(): RTCPeerConnection {
-    console.log("=== CALLING SERVICE: Creating peer connection ===");
+  private createPeerConnection(callData: CallData): RTCPeerConnection {
+    console.log("🔄 Creating new RTCPeerConnection...");
 
-    // Enhanced WebRTC configuration for cross-device reliability
-    const configuration: RTCConfiguration = {
-      // CRITICAL FIX: Simplified configuration for better compatibility
+    // ✅ --- CRITICAL FIX #1: ADD STUN SERVERS --- ✅
+    const configuration = {
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
+        // Add TURN servers here for production applications
       ],
-      iceCandidatePoolSize: 0, // Disable candidate pooling for better control
-      bundlePolicy: "balanced",
-      rtcpMuxPolicy: "require",
     };
 
-    console.log("🔧 WebRTC Configuration:", configuration);
+    this.peerConnection = new RTCPeerConnection(configuration);
 
-    const peerConnection = new RTCPeerConnection(configuration);
-
-    // Enhanced ICE candidate handling
-    peerConnection.onicecandidate = (event) => {
-      console.log("🧊 ICE candidate generated:", event.candidate);
-      console.log("🧊 ICE candidate details:", {
-        type: event.candidate?.type,
-        protocol: event.candidate?.protocol,
-        address: event.candidate?.address,
-        port: event.candidate?.port,
-        candidate: event.candidate?.candidate,
-        sdpMid: event.candidate?.sdpMid,
-        sdpMLineIndex: event.candidate?.sdpMLineIndex,
+    // Add local stream tracks to the connection
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => {
+        this.peerConnection?.addTrack(track, this.localStream!);
       });
+    }
 
-      if (event.candidate && this.socket) {
-        // Send ICE candidate to the other peer
-        const receiverId =
-          this.activeCall?.callData.receiverId ||
-          this.activeCall?.callData.callerId;
-        if (receiverId) {
-          const iceData = {
-            candidate: event.candidate,
-            receiverId: receiverId,
-            callId: this.activeCall?.callData.callId,
-            senderId: this.getCurrentUserId(), // Add sender ID for proper routing
-          };
-          console.log("🧊 Sending ICE candidate:", iceData);
-          this.socket.emit("iceCandidate", iceData);
-          console.log("✅ ICE candidate sent to:", receiverId);
-        } else {
-          console.error("❌ No receiver ID found for ICE candidate");
-        }
-      } else if (!event.candidate) {
-        console.log("🧊 ICE gathering complete - no more candidates");
-        // CRITICAL FIX: Force ICE restart if connection is still in 'new' state
-        if (peerConnection.iceConnectionState === 'new') {
-          console.log("🚨 ICE gathering complete but connection still in 'new' state, forcing restart...");
-          setTimeout(() => {
-            if (peerConnection.iceConnectionState === 'new') {
-              try {
-                peerConnection.restartIce();
-                console.log("✅ ICE restart initiated after gathering complete");
-              } catch (error) {
-                console.warn("⚠️ ICE restart failed:", error);
-              }
-            }
-          }, 1000);
-        }
-      } else {
-        console.error("❌ No socket available for ICE candidate");
-      }
-    };
-
-    // Monitor ICE gathering state
-    peerConnection.onicegatheringstatechange = () => {
-      console.log(
-        "🧊 ICE gathering state changed:",
-        peerConnection.iceGatheringState
-      );
-      if (peerConnection.iceGatheringState === "complete") {
-        console.log("✅ ICE gathering completed");
-      }
-    };
-
-    // Monitor ICE connection state
-    peerConnection.oniceconnectionstatechange = () => {
-      console.log(
-        "🧊 ICE connection state changed:",
-        peerConnection.iceConnectionState
-      );
-      console.log("🔗 Connection state:", peerConnection.connectionState);
-
-      // Log detailed ICE state information
-      console.log("🧊 DETAILED ICE STATE:", {
-        iceConnectionState: peerConnection.iceConnectionState,
-        connectionState: peerConnection.connectionState,
-        iceGatheringState: peerConnection.iceGatheringState,
-        signalingState: peerConnection.signalingState,
-        hasLocalDescription: !!peerConnection.localDescription,
-        hasRemoteDescription: !!peerConnection.remoteDescription,
-      });
-
-      // CRITICAL FIX: More aggressive ICE restart for stuck connections
-      if (peerConnection.iceConnectionState === "failed") {
-        console.error("❌ ICE connection failed - trying to restart ICE");
-        console.error(
-          "❌ This usually means ICE candidates couldn't establish a connection"
-        );
-        try {
-          peerConnection.restartIce();
-          console.log("✅ ICE restart initiated after failure");
-        } catch (restartError) {
-          console.warn("⚠️ ICE restart failed:", restartError);
-        }
-      } else if (peerConnection.iceConnectionState === "connected") {
-        console.log("✅ ICE connection established successfully!");
-        console.log("🎵 Media path should now be working!");
-      } else if (peerConnection.iceConnectionState === "checking") {
-        console.log("🔄 ICE connection checking - testing candidate pairs...");
-      } else if (peerConnection.iceConnectionState === "disconnected") {
-        console.log("⚠️ ICE connection disconnected");
-      } else if (peerConnection.iceConnectionState === "new") {
-        console.log("🔄 ICE connection in 'new' state - monitoring for progress...");
-        // CRITICAL FIX: Set a timeout to force ICE restart if stuck too long
-        setTimeout(() => {
-          if (peerConnection.iceConnectionState === 'new' && 
-              peerConnection.connectionState === 'new') {
-            console.log("🚨 ICE connection stuck in 'new' state too long, forcing restart...");
-            try {
-              peerConnection.restartIce();
-              console.log("✅ ICE restart initiated due to timeout");
-            } catch (restartError) {
-              console.warn("⚠️ ICE restart failed due to timeout:", restartError);
-            }
-          }
-        }, 5000); // Wait 5 seconds before forcing restart
-      }
-    };
-
-    // Monitor connection state
-    peerConnection.onconnectionstatechange = () => {
-      console.log(
-        "🔗 Connection state changed:",
-        peerConnection.connectionState
-      );
-
-      // Log detailed state information
-      console.log("🔗 DETAILED CONNECTION STATE:", {
-        connectionState: peerConnection.connectionState,
-        iceConnectionState: peerConnection.iceConnectionState,
-        iceGatheringState: peerConnection.iceGatheringState,
-        signalingState: peerConnection.signalingState,
-        hasLocalDescription: !!peerConnection.localDescription,
-        hasRemoteDescription: !!peerConnection.remoteDescription,
-        localDescriptionType: peerConnection.localDescription?.type,
-        remoteDescriptionType: peerConnection.remoteDescription?.type,
-      });
-
-      if (peerConnection.connectionState === "failed") {
-        console.error("❌ WebRTC connection failed");
-        // Notify UI about connection failure
-        this.onCallEnded?.({ reason: "Connection failed" });
-      } else if (peerConnection.connectionState === "connected") {
-        console.log("✅ WebRTC connection established successfully!");
-        console.log("🎵 Audio should now be working!");
-      } else if (peerConnection.connectionState === "connecting") {
-        console.log("🔄 WebRTC connection is connecting...");
-      } else if (peerConnection.connectionState === "disconnected") {
-        console.log("⚠️ WebRTC connection disconnected");
-      }
-    };
-
-    // Monitor signaling state
-    peerConnection.onsignalingstatechange = () => {
-      console.log("📡 Signaling state changed:", peerConnection.signalingState);
-    };
-
-    // Handle incoming tracks
-    peerConnection.ontrack = (event) => {
-      console.log("🎵 Track received:", event.track);
-      console.log("🎵 Streams:", event.streams);
-
+    // Handle incoming remote stream
+    this.peerConnection.ontrack = (event) => {
+      console.log("✅ Remote track received!");
       if (event.streams && event.streams[0]) {
         this.remoteStream = event.streams[0];
-        console.log("✅ Remote stream set:", this.remoteStream);
-
-        // Notify UI about remote stream
-        this.onRemoteStream?.(this.remoteStream);
+        this.onRemoteStream?.(this.remoteStream); // Notify UI to attach the stream
       }
     };
 
-    // Start connection quality monitoring
-    this.startConnectionQualityMonitoring(peerConnection);
-
-    console.log("✅ Peer connection created with enhanced configuration");
-    return peerConnection;
-  }
-
-  // Simple connection quality monitoring
-  private startConnectionQualityMonitoring(pc: RTCPeerConnection) {
-    if (!pc) return;
-
-    console.log("🔍 Starting connection quality monitoring...");
-
-    const monitorInterval = setInterval(() => {
-      if (!pc || pc.connectionState === "closed") {
-        clearInterval(monitorInterval);
-        return;
+    // Handle ICE candidate generation
+    this.peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log("🧊 New ICE candidate generated, sending to peer...");
+        this.socket?.emit("iceCandidate", {
+          receiverId: this.getOtherUserId(callData),
+          candidate: event.candidate,
+          senderId: callData.callerId, // Ensure senderId is included
+          callId: callData.callId,
+        });
       }
+    };
 
-      console.log("📊 CONNECTION STATUS:", {
-        timestamp: new Date().toISOString(),
-        connectionState: pc.connectionState,
-        iceConnectionState: pc.iceConnectionState,
-        iceGatheringState: pc.iceGatheringState,
-        signalingState: pc.signalingState,
-        hasLocalDescription: !!pc.localDescription,
-        hasRemoteDescription: !!pc.remoteDescription,
-        localDescriptionType: pc.localDescription?.type,
-        remoteDescriptionType: pc.remoteDescription?.type,
-      });
-
-      // CRITICAL FIX: Check if connection is stuck and needs intervention
-      if (pc.connectionState === "new" && pc.iceConnectionState === "new") {
-        console.warn(
-          "⚠️ Connection stuck in 'new' state - ICE candidates may not be exchanging"
-        );
-
-        // If stuck for more than 10 seconds, try to intervene
-        const stuckTime = Date.now() - (this.callStartTime || Date.now());
-        if (stuckTime > 10000) {
-          // 10 seconds
-          console.log(
-            "🚨 Connection stuck for too long, attempting recovery..."
-          );
-
-          // Try ICE restart first
-          try {
-            pc.restartIce();
-            console.log("✅ ICE restart initiated to resolve stuck connection");
-          } catch (restartError) {
-            console.warn("⚠️ ICE restart failed:", restartError);
-
-            // If ICE restart fails, try recreating the peer connection
-            console.log(
-              "🔄 ICE restart failed, attempting to recreate peer connection..."
-            );
-            this.recreatePeerConnection();
-          }
-        }
-      }
-
-      // Check for ICE connection failures
-      if (pc.iceConnectionState === "failed") {
-        console.error("❌ ICE connection failed - attempting recovery...");
-        try {
-          pc.restartIce();
-          console.log("✅ ICE restart initiated after failure");
-        } catch (restartError) {
-          console.warn("⚠️ ICE restart failed after failure:", restartError);
-          // If restart fails, recreate the connection
-          this.recreatePeerConnection();
-        }
-      }
-    }, 5000); // Check every 5 seconds
-
-    // Store interval for cleanup
-    this.connectionMonitorInterval = monitorInterval as unknown as number;
+    return this.peerConnection;
   }
 
   private async handleOffer(data: any) {
@@ -1638,7 +999,9 @@ class CallingService {
 
       // CRITICAL FIX: Force ICE restart if connection is stuck in "new" state
       if (this.peerConnection.iceConnectionState === "new") {
-        console.log("🔄 ICE connection stuck in 'new' state, forcing restart...");
+        console.log(
+          "🔄 ICE connection stuck in 'new' state, forcing restart..."
+        );
         try {
           await this.peerConnection.restartIce();
           console.log("✅ ICE restart initiated to resolve stuck connection");
@@ -1649,18 +1012,21 @@ class CallingService {
 
       // CRITICAL FIX: Force connection establishment after answer is set
       console.log("🔄 Forcing connection establishment after answer...");
-      
+
       // Only create data channel if we're the caller (to avoid errors on receiver side)
       if (this.activeCall?.callData.callerId === this.getCurrentUserId()) {
         try {
           // Create a dummy data channel to force ICE connection (caller only)
-          const dataChannel = this.peerConnection.createDataChannel("force-connection");
+          const dataChannel =
+            this.peerConnection.createDataChannel("force-connection");
           dataChannel.onopen = () => {
             console.log("✅ Data channel opened, forcing ICE connection...");
             // Close the data channel immediately
             dataChannel.close();
           };
-          console.log("✅ Data channel created to force ICE connection (caller side)");
+          console.log(
+            "✅ Data channel created to force ICE connection (caller side)"
+          );
         } catch (error) {
           console.warn("⚠️ Could not create data channel:", error);
         }
@@ -1987,17 +1353,21 @@ class CallingService {
 
   // Get current user ID from localStorage
   private getCurrentUserId(): string | null {
-    try {
-      const authUser = localStorage.getItem("authUser");
-      if (authUser) {
-        const user = JSON.parse(authUser);
-        return user._id || null;
-      }
-      return null;
-    } catch (error) {
-      console.error("Error getting current user ID:", error);
-      return null;
+    const storedUser = localStorage.getItem("authUser");
+    if (storedUser) {
+      return JSON.parse(storedUser)._id;
     }
+    return null;
+  }
+
+  // Get current user name from localStorage
+  private getCurrentUserName(): string | null {
+    const storedUser = localStorage.getItem("authUser");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      return user.name || user.username || null;
+    }
+    return null;
   }
 
   // Create and send WebRTC offer
@@ -2096,16 +1466,6 @@ class CallingService {
       console.log(
         "🔄 === FRONTEND: CREATE AND SEND OFFER FAILED WITH ERROR ==="
       );
-    }
-  }
-
-  // Process pending offer if available
-  private async processPendingOffer() {
-    if (this.pendingOffer && this.peerConnection) {
-      console.log("🔄 Processing pending offer...");
-      await this.handleOffer(this.pendingOffer);
-      this.pendingOffer = null;
-      console.log("✅ Pending offer processed and cleared");
     }
   }
 
@@ -2425,7 +1785,9 @@ class CallingService {
 
       // Create new peer connection
       console.log("🔄 Creating new peer connection...");
-      this.peerConnection = this.createPeerConnection();
+      this.peerConnection = this.createPeerConnection(
+        this.activeCall!.callData
+      );
 
       // Re-add local stream tracks
       if (currentLocalStream && this.peerConnection) {
@@ -2457,35 +1819,51 @@ class CallingService {
     }
   }
 
-  private async requestMedia(
-    constraints: MediaStreamConstraints
-  ): Promise<MediaStream> {
-    console.log("🔄 Requesting media with constraints:", constraints);
+  // Add this method to your CallingService class
+  // This method should be called from your UI component when the user clicks "Accept"
+  public async handleAcceptCall(callData: CallData) {
+    console.log("✅ User accepted the call. Setting up peer connection.");
 
-    // Mobile-specific audio optimizations
-    if (constraints.audio && typeof constraints.audio === "object") {
-      const audioConstraints = constraints.audio as MediaTrackConstraints;
-
-      // Add mobile-friendly audio settings
-      audioConstraints.echoCancellation = true;
-      audioConstraints.noiseSuppression = true;
-      audioConstraints.autoGainControl = true;
-      audioConstraints.sampleRate = 48000;
-      audioConstraints.channelCount = 1; // Mono for mobile
-
-      console.log("📱 Mobile audio constraints applied:", audioConstraints);
-    }
+    this.activeCall = {
+      callData,
+      peerConnection: null,
+      localStream: null,
+      remoteStream: null,
+    };
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("✅ Media stream obtained:", stream);
-      console.log("🎵 Audio tracks:", stream.getAudioTracks());
-      console.log("📹 Video tracks:", stream.getVideoTracks());
-      return stream;
-    } catch (error: any) {
-      console.error("❌ Error getting media stream:", error);
-      throw error;
+      // 1. Get user's microphone/camera
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callData.callType === "video",
+      });
+
+      // 2. Create the Peer Connection (this now includes the STUN fix)
+      this.createPeerConnection(callData);
+
+      // ✅ --- CRITICAL FIX #2: PROCESS THE PENDING OFFER --- ✅
+      if (this.pendingOffer) {
+        console.log("🔄 Processing queued offer after accepting call...");
+        await this.handleOffer(this.pendingOffer);
+        this.pendingOffer = null; // Clear the queued offer
+      }
+    } catch (error) {
+      console.error("Error accepting call:", error);
+      this.cleanupCall();
     }
+  }
+
+  // Helper to get the other user's ID
+  private getOtherUserId(callData: CallData): string {
+    const currentUserId = this.getCurrentUserId();
+    return currentUserId === callData.callerId
+      ? callData.receiverId
+      : callData.callerId;
+  }
+
+  // Generate a unique call ID
+  private generateCallId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 
