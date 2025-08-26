@@ -415,11 +415,13 @@ io.on("connection", (socket) => {
     console.log("🎯 SOCKET SERVER: Receiver lookup result:", {
       requestedReceiverId: data.receiverId,
       receiverFound: !!receiver,
-      receiverDetails: receiver ? {
-        userId: receiver.userId,
-        socketId: receiver.socketId,
-        isOnline: !!receiver.socketId,
-      } : null,
+      receiverDetails: receiver
+        ? {
+            userId: receiver.userId,
+            socketId: receiver.socketId,
+            isOnline: !!receiver.socketId,
+          }
+        : null,
     });
 
     if (receiver) {
@@ -452,7 +454,9 @@ io.on("connection", (socket) => {
         });
         console.log("✅ SOCKET SERVER: Offer sent directly to receiver socket");
       } else {
-        console.log("❌ SOCKET SERVER: Receiver socket not found, trying io.to() fallback");
+        console.log(
+          "❌ SOCKET SERVER: Receiver socket not found, trying io.to() fallback"
+        );
         // Fallback to io.to() method
         io.to(receiver.socketId).emit("offer", {
           ...data,

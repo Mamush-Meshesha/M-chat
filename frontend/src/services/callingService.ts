@@ -567,8 +567,10 @@ class CallingService {
       console.log("🎯 Receiver ID from offer:", data.receiverId);
       console.log("🎯 Current user ID:", this.getCurrentUserId());
       console.log("🎯 User role in call:", {
-        isReceiver: this.activeCall?.callData.receiverId === this.getCurrentUserId(),
-        isCaller: this.activeCall?.callData.callerId === this.getCurrentUserId(),
+        isReceiver:
+          this.activeCall?.callData.receiverId === this.getCurrentUserId(),
+        isCaller:
+          this.activeCall?.callData.callerId === this.getCurrentUserId(),
         activeCallReceiverId: this.activeCall?.callData.receiverId,
         activeCallCallerId: this.activeCall?.callData.callerId,
       });
@@ -1220,36 +1222,14 @@ class CallingService {
 
     // Enhanced WebRTC configuration for cross-device reliability
     const configuration: RTCConfiguration = {
+      // CRITICAL FIX: Simplified configuration for better compatibility
       iceServers: [
-        // STUN servers for public IP discovery
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun3.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:19302" },
-
-        // TURN servers for relay when direct connection fails
-        // You can use free TURN servers for testing, or set up your own
-        {
-          urls: "turn:openrelay.metered.ca:80",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:openrelay.metered.ca:443",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
-        {
-          urls: "turn:openrelay.metered.ca:443?transport=tcp",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
       ],
-      iceCandidatePoolSize: 10,
-      bundlePolicy: "max-bundle",
+      iceCandidatePoolSize: 0, // Disable candidate pooling for better control
+      bundlePolicy: "balanced",
       rtcpMuxPolicy: "require",
-      iceTransportPolicy: "all",
     };
 
     console.log("🔧 WebRTC Configuration:", configuration);
@@ -1289,6 +1269,20 @@ class CallingService {
         }
       } else if (!event.candidate) {
         console.log("🧊 ICE gathering complete - no more candidates");
+        // CRITICAL FIX: Force ICE restart if connection is still in 'new' state
+        if (peerConnection.iceConnectionState === 'new') {
+          console.log("🚨 ICE gathering complete but connection still in 'new' state, forcing restart...");
+          setTimeout(() => {
+            if (peerConnection.iceConnectionState === 'new') {
+              try {
+                peerConnection.restartIce();
+                console.log("✅ ICE restart initiated after gathering complete");
+              } catch (error) {
+                console.warn("⚠️ ICE restart failed:", error);
+              }
+            }
+          }, 1000);
+        }
       } else {
         console.error("❌ No socket available for ICE candidate");
       }
@@ -1323,12 +1317,18 @@ class CallingService {
         hasRemoteDescription: !!peerConnection.remoteDescription,
       });
 
+      // CRITICAL FIX: More aggressive ICE restart for stuck connections
       if (peerConnection.iceConnectionState === "failed") {
         console.error("❌ ICE connection failed - trying to restart ICE");
         console.error(
           "❌ This usually means ICE candidates couldn't establish a connection"
         );
-        peerConnection.restartIce();
+        try {
+          peerConnection.restartIce();
+          console.log("✅ ICE restart initiated after failure");
+        } catch (restartError) {
+          console.warn("⚠️ ICE restart failed:", restartError);
+        }
       } else if (peerConnection.iceConnectionState === "connected") {
         console.log("✅ ICE connection established successfully!");
         console.log("🎵 Media path should now be working!");
@@ -1336,6 +1336,21 @@ class CallingService {
         console.log("🔄 ICE connection checking - testing candidate pairs...");
       } else if (peerConnection.iceConnectionState === "disconnected") {
         console.log("⚠️ ICE connection disconnected");
+      } else if (peerConnection.iceConnectionState === "new") {
+        console.log("🔄 ICE connection in 'new' state - monitoring for progress...");
+        // CRITICAL FIX: Set a timeout to force ICE restart if stuck too long
+        setTimeout(() => {
+          if (peerConnection.iceConnectionState === 'new' && 
+              peerConnection.connectionState === 'new') {
+            console.log("🚨 ICE connection stuck in 'new' state too long, forcing restart...");
+            try {
+              peerConnection.restartIce();
+              console.log("✅ ICE restart initiated due to timeout");
+            } catch (restartError) {
+              console.warn("⚠️ ICE restart failed due to timeout:", restartError);
+            }
+          }
+        }, 5000); // Wait 5 seconds before forcing restart
       }
     };
 
@@ -1485,7 +1500,9 @@ class CallingService {
 
       if (!this.peerConnection) {
         console.error("❌ No peer connection available in handleOffer");
-        console.log("🔄 === FRONTEND: HANDLE OFFER FAILED (NO PEER CONNECTION) ===");
+        console.log(
+          "🔄 === FRONTEND: HANDLE OFFER FAILED (NO PEER CONNECTION) ==="
+        );
         return;
       }
 
@@ -1621,15 +1638,34 @@ class CallingService {
 
       // CRITICAL FIX: Force ICE restart if connection is stuck in "new" state
       if (this.peerConnection.iceConnectionState === "new") {
-        console.log(
-          "🔄 ICE connection stuck in 'new' state, forcing restart..."
-        );
+        console.log("🔄 ICE connection stuck in 'new' state, forcing restart...");
         try {
           await this.peerConnection.restartIce();
-          console.log("✅ ICE restart initiated");
+          console.log("✅ ICE restart initiated to resolve stuck connection");
         } catch (restartError) {
           console.warn("⚠️ ICE restart failed:", restartError);
         }
+      }
+
+      // CRITICAL FIX: Force connection establishment after answer is set
+      console.log("🔄 Forcing connection establishment after answer...");
+      
+      // Only create data channel if we're the caller (to avoid errors on receiver side)
+      if (this.activeCall?.callData.callerId === this.getCurrentUserId()) {
+        try {
+          // Create a dummy data channel to force ICE connection (caller only)
+          const dataChannel = this.peerConnection.createDataChannel("force-connection");
+          dataChannel.onopen = () => {
+            console.log("✅ Data channel opened, forcing ICE connection...");
+            // Close the data channel immediately
+            dataChannel.close();
+          };
+          console.log("✅ Data channel created to force ICE connection (caller side)");
+        } catch (error) {
+          console.warn("⚠️ Could not create data channel:", error);
+        }
+      } else {
+        console.log("🔄 Skipping data channel creation (receiver side)");
       }
 
       // Debug: Check what tracks are available after setting remote description
@@ -1979,7 +2015,9 @@ class CallingService {
         console.error(
           "❌ Cannot create offer: missing peer connection, socket, or active call"
         );
-        console.log("🔄 === FRONTEND: CREATE AND SEND OFFER FAILED (MISSING DEPENDENCIES) ===");
+        console.log(
+          "🔄 === FRONTEND: CREATE AND SEND OFFER FAILED (MISSING DEPENDENCIES) ==="
+        );
         return;
       }
 
@@ -2050,10 +2088,14 @@ class CallingService {
         "✅ Offer sent to receiver:",
         this.activeCall.callData.receiverId
       );
-      console.log("🔄 === FRONTEND: CREATE AND SEND OFFER COMPLETED SUCCESSFULLY ===");
+      console.log(
+        "🔄 === FRONTEND: CREATE AND SEND OFFER COMPLETED SUCCESSFULLY ==="
+      );
     } catch (error) {
       console.error("❌ Error creating and sending offer:", error);
-      console.log("🔄 === FRONTEND: CREATE AND SEND OFFER FAILED WITH ERROR ===");
+      console.log(
+        "🔄 === FRONTEND: CREATE AND SEND OFFER FAILED WITH ERROR ==="
+      );
     }
   }
 
