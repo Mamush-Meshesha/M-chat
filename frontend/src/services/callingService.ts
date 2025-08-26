@@ -350,6 +350,20 @@ class CallingService {
       return;
     }
 
+    // CRITICAL FIX: Remove all existing listeners first to prevent duplicates
+    this.socket.off("callAccepted");
+    this.socket.off("callConnected");
+    this.socket.off("callEnded");
+    this.socket.off("callFailed");
+    this.socket.off("callDeclined");
+    this.socket.off("callCancelled");
+    this.socket.off("offer");
+    this.socket.off("answer");
+    this.socket.off("iceCandidate");
+    this.socket.off("test");
+    this.socket.off("callTypeChanged");
+    console.log("🔌 Previous event listeners removed");
+
     // Handle call accepted (ONLY for the caller)
     this.socket.on("callAccepted", (data) => {
       this.eventCounts.callAccepted++;
@@ -370,13 +384,23 @@ class CallingService {
         this.eventCounts.callAccepted
       );
 
-      // Check for event duplication
+      // CRITICAL FIX: Enhanced duplicate event detection and prevention
       if (this.eventCounts.callAccepted > 1) {
         console.log("🚨 WARNING: callAccepted event received multiple times!");
         console.log(
           "🚨 This suggests event duplication or wrong event routing!"
         );
-        // CRITICAL FIX: Don't process duplicate events
+        console.log("🚨 Event count:", this.eventCounts.callAccepted);
+        
+        // CRITICAL FIX: Don't process duplicate events and reset the connection
+        if (this.eventCounts.callAccepted > 3) {
+          console.log("🚨 Too many duplicate events, resetting connection...");
+          this.eventCounts.callAccepted = 0;
+          this.cleanupCall();
+          return;
+        }
+        
+        // For 2-3 events, just ignore them
         return;
       }
 
@@ -695,6 +719,11 @@ class CallingService {
     console.log("=== CALLING SERVICE: initiateCall ===");
     console.log("Call data received:", callData);
 
+    // CRITICAL FIX: Reset event counters for new call
+    this.eventCounts.callAccepted = 0;
+    this.eventCounts.callConnected = 0;
+    console.log("🔄 Event counters reset for new call");
+
     try {
       // Ensure we have a valid socket connection
       await this.ensureSocket();
@@ -804,6 +833,11 @@ class CallingService {
       console.log("🔄 Call data received:", callData);
       console.log("🔄 Current user ID:", this.getCurrentUserId());
       console.log("🔄 Current socket ID:", this.socket?.id);
+
+      // CRITICAL FIX: Reset event counters for accepted call
+      this.eventCounts.callAccepted = 0;
+      this.eventCounts.callConnected = 0;
+      console.log("🔄 Event counters reset for accepted call");
 
       // Ensure we have a valid socket connection
       await this.ensureSocket();
@@ -2058,6 +2092,11 @@ class CallingService {
       );
       this.pendingIceCandidates = [];
     }
+
+    // CRITICAL FIX: Reset event counters
+    this.eventCounts.callAccepted = 0;
+    this.eventCounts.callConnected = 0;
+    console.log("🔄 Event counters reset");
 
     console.log("✅ Call resources cleaned up");
   }

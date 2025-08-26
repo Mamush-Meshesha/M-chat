@@ -43,18 +43,27 @@ class SocketManager {
    * This is the primary method to call after login or to force a connection.
    */
   public connect() {
-    // Only disconnect if we have a connected socket
+    // CRITICAL FIX: Prevent multiple socket connections
     if (this.socket && this.socket.connected) {
       console.log(
-        "🔄 Disconnecting existing connected socket before creating a new one..."
+        "🔄 Socket already connected, skipping duplicate connection..."
+      );
+      return; // Don't create another connection if one already exists
+    }
+
+    // Only disconnect if we have a socket that's in a bad state
+    if (this.socket && !this.socket.connected) {
+      console.log(
+        "🔄 Disconnecting existing disconnected socket before creating a new one..."
       );
       this.socket.disconnect();
+      this.socket = null;
       // Wait a bit for the disconnect to complete
       setTimeout(() => {
         this.createNewConnection();
       }, 100);
     } else {
-      // No existing socket or socket not connected, create new one directly
+      // No existing socket, create new one directly
       this.createNewConnection();
     }
   }
