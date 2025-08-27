@@ -81,6 +81,10 @@ const Dashboardheader: FC<DashboardheaderProps> = ({
       currentUserChat,
     });
 
+    // DEBUG: Check socket server state before initiating call
+    console.log("🔍 DEBUG: Checking socket server state...");
+    await callingService.debugSocketServer();
+
     setCallType(type);
     setIsIncomingCall(false);
     setIsCallDialogOpen(true);

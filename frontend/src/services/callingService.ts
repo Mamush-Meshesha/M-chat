@@ -1346,6 +1346,28 @@ class CallingService {
     return !!this.socket;
   }
 
+  // Debug method to check socket server state
+  async debugSocketServer() {
+    try {
+      if (!this.socket) {
+        console.log("❌ No socket available for debug");
+        return;
+      }
+
+      console.log("🔍 DEBUG: Requesting socket server state...");
+      this.socket.emit("debug");
+
+      // Listen for debug response
+      this.socket.once("debugResponse", (data) => {
+        console.log("🔍 DEBUG RESPONSE RECEIVED:", data);
+        console.log("🔍 Active users:", data.activeUsers);
+        console.log("🔍 Active calls:", data.activeCalls);
+      });
+    } catch (error) {
+      console.error("❌ Error debugging socket server:", error);
+    }
+  }
+
   // Set ringtone volume (0.0 to 1.0)
   setRingtoneVolume(volume: number) {
     // This method is no longer used as custom ringtone is removed.

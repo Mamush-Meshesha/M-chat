@@ -40,6 +40,30 @@ console.log(`🚀 Socket.IO server starting on port ${process.env.PORT || 8000}`
 let activeUsers = [];
 let activeCalls = new Map(); // Track active calls
 
+// Debug endpoint to check server state
+io.on("connection", (socket) => {
+  // Debug endpoint to check server state
+  socket.on("debug", () => {
+    console.log("🔍 DEBUG REQUEST RECEIVED");
+    console.log("🔍 Active users:", activeUsers.length);
+    console.log("🔍 Active calls:", activeCalls.size);
+    console.log(
+      "🔍 All active users:",
+      activeUsers.map((u) => ({ userId: u.userId, socketId: u.socketId }))
+    );
+    console.log("🔍 All active calls:", Array.from(activeCalls.entries()));
+
+    socket.emit("debugResponse", {
+      activeUsers: activeUsers.map((u) => ({
+        userId: u.userId,
+        socketId: u.socketId,
+      })),
+      activeCalls: Array.from(activeCalls.entries()),
+      timestamp: new Date().toISOString(),
+    });
+  });
+});
+
 // Helper functions
 const getUser = (userId) => {
   const user = activeUsers.find((user) => user.userId === userId);
@@ -78,6 +102,11 @@ io.on("connection", (socket) => {
   socket.on("addUser", (userId, user) => {
     console.log("🔄 === ADDING USER ===");
     console.log("🔄 Adding user:", userId, "Socket:", socket.id);
+    console.log("🔄 User data:", {
+      userId,
+      socketId: socket.id,
+      hasAuthUser: !!user,
+    });
 
     // Check if user already exists
     const existingUserIndex = activeUsers.findIndex((u) => u.userId === userId);
@@ -149,12 +178,27 @@ io.on("connection", (socket) => {
 
   // Handle call initiation
   socket.on("initiateCall", (data) => {
+    console.log("📞 === CALL INITIATION STARTED ===");
     console.log("📞 Call initiated:", data);
+    console.log("📞 Active users count:", activeUsers.length);
+    console.log(
+      "📞 All active users:",
+      activeUsers.map((u) => ({ userId: u.userId, socketId: u.socketId }))
+    );
+
     const receiver = getUser(data.receiverId);
+    console.log("📞 Receiver lookup result:", {
+      requestedReceiverId: data.receiverId,
+      receiverFound: !!receiver,
+      receiverDetails: receiver
+        ? { userId: receiver.userId, socketId: receiver.socketId }
+        : null,
+    });
 
     if (receiver) {
       // Check if user is already in a call
       if (getActiveCall(data.receiverId)) {
+        console.log("❌ Receiver is busy in another call");
         socket.emit("callFailed", {
           reason: "User is busy in another call",
           receiverId: data.receiverId,
@@ -176,7 +220,15 @@ io.on("connection", (socket) => {
       activeCalls.set(data.callerId, callData);
       activeCalls.set(data.receiverId, callData);
 
+      console.log("📞 Call data stored:", callData);
+
       // Emit incoming call to receiver
+      console.log("📡 Emitting incomingCall to receiver:", {
+        receiverSocketId: receiver.socketId,
+        receiverUserId: receiver.userId,
+        callData: callData,
+      });
+
       io.to(receiver.socketId).emit("incomingCall", {
         ...callData,
         callerName: data.callerName || "Caller",
@@ -185,11 +237,18 @@ io.on("connection", (socket) => {
 
       console.log("✅ Incoming call sent to:", data.receiverId);
     } else {
+      console.log("❌ Receiver not found in active users:", {
+        requestedReceiverId: data.receiverId,
+        activeUsersCount: activeUsers.length,
+        availableUserIds: activeUsers.map((u) => u.userId),
+      });
+
       socket.emit("callFailed", {
-        reason: "Receiver not found",
+        reason: "Receiver not found or not connected",
         receiverId: data.receiverId,
       });
     }
+    console.log("📞 === CALL INITIATION ENDED ===");
   });
 
   // Handle call acceptance
