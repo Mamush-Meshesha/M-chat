@@ -6,7 +6,7 @@ export const environment = {
 
   // URLs based on environment
   SOCKET_URL:
-    import.meta.env.VITE_SOCKET_URL || "https://m-chat-1.onrender.com",
+    import.meta.env.VITE_SOCKET_URL || "https://m-chat-k2ob.onrender.com",
   API_BASE_URL:
     import.meta.env.VITE_API_BASE_URL || "https://m-chat-k2ob.onrender.com",
 
@@ -15,7 +15,7 @@ export const environment = {
     if (import.meta.env.VITE_SOCKET_URL) {
       return import.meta.env.VITE_SOCKET_URL;
     }
-    return "https://m-chat-1.onrender.com";
+    return "https://m-chat-k2ob.onrender.com";
   },
 
   getApiBaseUrl: () => {

@@ -3,13 +3,59 @@ const io = require("socket.io")(process.env.PORT || 8000, {
     origin: "*",
     methods: ["GET", "POST"],
   },
-  transports: ["polling", "websocket"],
+  transports: ["polling", "websocket"], // Polling first for Render compatibility
   allowEIO3: true,
   pingTimeout: 60000,
   pingInterval: 25000,
+  // Render-specific optimizations
+  maxHttpBufferSize: 1e6,
+  allowRequest: (req, callback) => {
+    // Allow all requests for now
+    callback(null, true);
+  },
+  // Better error handling
+  connectTimeout: 45000,
+  // Force polling on initial connection
+  upgrade: true,
+  rememberUpgrade: false,
 });
 
 console.log("Socket.IO server starting on port", process.env.PORT || 8000);
+
+// Add HTTP health check endpoint
+const http = require("http");
+const server = http.createServer((req, res) => {
+  if (req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        activeUsers: activeUsers.length,
+        activeCalls: activeCalls.length,
+        uptime: process.uptime(),
+      })
+    );
+  } else {
+    res.writeHead(404);
+    res.end("Not Found");
+  }
+});
+
+// Attach Socket.IO to the HTTP server
+io.attach(server);
+
+// Start the server
+server.listen(process.env.PORT || 8000, () => {
+  console.log(
+    `🚀 HTTP server with Socket.IO running on port ${process.env.PORT || 8000}`
+  );
+  console.log(
+    `🔍 Health check available at: http://localhost:${
+      process.env.PORT || 8000
+    }/health`
+  );
+});
 
 // Track active users and their socket IDs
 const activeUsers = [];
@@ -21,7 +67,12 @@ const getUser = (userId) => {
 };
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log(
+    "User connected:",
+    socket.id,
+    "Transport:",
+    socket.conn.transport.name
+  );
 
   // Handle user registration
   socket.on("addUser", (userData) => {
@@ -240,4 +291,17 @@ io.on("connection", (socket) => {
       );
     }
   });
+});
+
+// Error handling for the server
+io.engine.on("connection_error", (err) => {
+  console.error("Connection error:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });

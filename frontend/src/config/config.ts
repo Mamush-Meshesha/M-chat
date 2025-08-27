@@ -17,16 +17,6 @@ export const config = {
     GET_MESSAGE: "/api/users/message",
     CALLS: "/api/calls",
   },
-
-  // Socket configuration
-  SOCKET_CONFIG: {
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    timeout: 5000,
-    transports: ["websocket"],
-  },
 };
 
 // Helper function to get full API URL
