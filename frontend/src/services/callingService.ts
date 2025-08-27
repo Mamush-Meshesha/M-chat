@@ -40,6 +40,7 @@ class CallingService {
   private screenShareTrack: MediaStreamTrack | null = null;
   private isScreenSharing = false;
   private connectionMonitorInterval: number | null = null;
+  private pendingAudioElement: HTMLAudioElement | null = null; // Store audio element for delayed playback
 
   constructor() {
     console.log("🚀 CallingService constructor called");
@@ -827,8 +828,19 @@ class CallingService {
     this.peerConnection.ontrack = (event) => {
       console.log("✅ Remote track received!");
       if (event.streams && event.streams[0]) {
+        // Prevent duplicate stream processing
+        if (this.remoteStream && this.remoteStream.id === event.streams[0].id) {
+          console.log("🔄 Remote stream already processed, skipping duplicate");
+          return;
+        }
+
         this.remoteStream = event.streams[0];
+        console.log("🔄 Remote stream updated, notifying UI...");
         this.onRemoteStream?.(this.remoteStream); // Notify UI to attach the stream
+
+        // Force audio playback for cross-device calls
+        console.log("🔊 Remote stream received, forcing audio playback...");
+        setTimeout(() => this.forceAudioPlayback(), 1000); // Wait 1 second for stream to stabilize
       }
     };
 
@@ -1007,6 +1019,27 @@ class CallingService {
         try {
           await this.peerConnection.restartIce();
           console.log("✅ ICE restart initiated to resolve stuck connection");
+
+          // Wait a bit for ICE restart to take effect
+          setTimeout(() => {
+            if (
+              this.peerConnection &&
+              this.peerConnection.iceConnectionState === "new"
+            ) {
+              console.log(
+                "🔄 ICE still stuck after restart, trying alternative approach..."
+              );
+              // Try to create a new offer to force ICE gathering
+              this.peerConnection
+                .createOffer()
+                .then((offer) =>
+                  this.peerConnection?.setLocalDescription(offer)
+                )
+                .catch((err) =>
+                  console.warn("⚠️ Alternative ICE fix failed:", err)
+                );
+            }
+          }, 2000);
         } catch (restartError) {
           console.warn("⚠️ ICE restart failed:", restartError);
         }
@@ -1066,6 +1099,21 @@ class CallingService {
       if (this.onCallConnected) {
         this.onCallConnected(data);
       }
+
+      // Force audio playback for cross-device calls
+      console.log("🔊 Call connected, forcing audio playback...");
+      this.forceAudioPlayback();
+
+      // Set up user interaction handler for audio
+      console.log("🔊 Setting up user interaction handler for audio...");
+      document.addEventListener("click", () => this.handleUserInteraction(), {
+        once: true,
+      });
+      document.addEventListener(
+        "touchstart",
+        () => this.handleUserInteraction(),
+        { once: true }
+      );
     } catch (error: any) {
       console.error("❌ Error handling answer:", error);
       console.error("❌ Error details:", error.message, error.stack);
@@ -1341,6 +1389,14 @@ class CallingService {
     return this.activeCall?.callData.status === "active";
   }
 
+  // Check if call is in progress (ringing or active)
+  isCallInProgress(): boolean {
+    return (
+      this.activeCall?.callData.status === "ringing" ||
+      this.activeCall?.callData.status === "active"
+    );
+  }
+
   // Debug getter for socket
   get socketStatus() {
     return !!this.socket;
@@ -1366,6 +1422,78 @@ class CallingService {
     } catch (error) {
       console.error("❌ Error debugging socket server:", error);
     }
+  }
+
+  // Force audio playback for cross-device calls
+  forceAudioPlayback() {
+    if (this.remoteStream) {
+      console.log("🔊 Force audio playback called");
+
+      // Create a new audio element to avoid conflicts
+      const audioElement = new Audio();
+      audioElement.srcObject = this.remoteStream;
+      audioElement.autoplay = true;
+      audioElement.volume = 1.0;
+
+      // Handle autoplay restrictions
+      audioElement.play().catch((error) => {
+        console.log(
+          "🔊 Autoplay failed, will retry on user interaction:",
+          error.message
+        );
+        // Store the audio element for later playback
+        this.pendingAudioElement = audioElement;
+      });
+
+      console.log("🔊 Audio element created and configured for force playback");
+    }
+  }
+
+  // Start pending audio on user interaction
+  startPendingAudio() {
+    if (this.pendingAudioElement) {
+      console.log("🔊 Starting pending audio on user interaction...");
+      this.pendingAudioElement
+        .play()
+        .then(() => {
+          console.log("✅ Pending audio started successfully");
+          this.pendingAudioElement = null;
+        })
+        .catch((error) => {
+          console.error("❌ Failed to start pending audio:", error);
+          this.pendingAudioElement = null;
+        });
+    }
+  }
+
+  // Check audio status and provide debugging info
+  getAudioDebugInfo() {
+    return {
+      hasRemoteStream: !!this.remoteStream,
+      remoteStreamTracks: this.remoteStream?.getTracks().length || 0,
+      remoteAudioTracks: this.remoteStream?.getAudioTracks().length || 0,
+      remoteVideoTracks: this.remoteStream?.getVideoTracks().length || 0,
+      peerConnectionState: this.peerConnection?.connectionState || "N/A",
+      iceConnectionState: this.peerConnection?.iceConnectionState || "N/A",
+      hasPendingAudio: !!this.pendingAudioElement,
+      callStatus: this.activeCall?.callData.status || "N/A",
+    };
+  }
+
+  // Handle user interaction to start audio (call this on click/touch events)
+  handleUserInteraction() {
+    console.log("👆 User interaction detected, attempting to start audio...");
+
+    // Start any pending audio
+    this.startPendingAudio();
+
+    // Also try to force audio playback again
+    if (this.remoteStream) {
+      this.forceAudioPlayback();
+    }
+
+    // Log current audio status
+    console.log("🔊 Audio debug info:", this.getAudioDebugInfo());
   }
 
   // Set ringtone volume (0.0 to 1.0)

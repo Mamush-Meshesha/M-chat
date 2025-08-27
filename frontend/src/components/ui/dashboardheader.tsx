@@ -113,6 +113,14 @@ const Dashboardheader: FC<DashboardheaderProps> = ({
         isCallActive,
         callType: type,
       });
+
+      // Set up audio interaction handler
+      setTimeout(() => {
+        if (callingService.isCallActive()) {
+          console.log("🔊 Call is active, setting up audio interaction...");
+          callingService.handleUserInteraction();
+        }
+      }, 3000); // Wait 3 seconds for call to establish
     } catch (error) {
       console.error("❌ Error initiating call:", error);
       setIsCallDialogOpen(false);
