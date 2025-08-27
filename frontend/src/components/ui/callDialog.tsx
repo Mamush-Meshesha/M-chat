@@ -341,6 +341,8 @@ const CallDialog: FC<CallDialogProps> = ({
                   volume: remoteAudioRef.current?.volume,
                   muted: remoteAudioRef.current?.muted,
                 });
+                // Notify calling service that audio setup is complete
+                callingService.notifyAudioSetupComplete();
               })
               .catch((error) => {
                 console.error("❌ Audio play failed:", error);
@@ -356,6 +358,9 @@ const CallDialog: FC<CallDialogProps> = ({
 
         // Try to start playback immediately
         startAudioPlayback();
+
+        // Notify calling service that audio setup is complete
+        callingService.notifyAudioSetupComplete();
 
         // Special handling for different device calls
         if (isDifferentDeviceCall) {
@@ -382,12 +387,21 @@ const CallDialog: FC<CallDialogProps> = ({
                 console.log(
                   "🌐 Retrying audio playback for different device call..."
                 );
-                remoteAudioRef.current.play().catch((error) => {
-                  console.error(
-                    "❌ Retry audio play failed for different device:",
-                    error
-                  );
-                });
+                remoteAudioRef.current
+                  .play()
+                  .then(() => {
+                    console.log(
+                      "✅ Retry audio playback successful for different device"
+                    );
+                    // Notify calling service that audio setup is complete
+                    callingService.notifyAudioSetupComplete();
+                  })
+                  .catch((error) => {
+                    console.error(
+                      "❌ Retry audio play failed for different device:",
+                      error
+                    );
+                  });
               }
             }, 500);
           }
@@ -761,38 +775,9 @@ const CallDialog: FC<CallDialogProps> = ({
     }
   }, [remoteScreenShareStream]);
 
-  useEffect(() => {
-    if (remoteAudioRef.current && remoteStream) {
-      console.log("🎵 Setting remote audio stream:", remoteStream);
-      console.log(
-        "🎵 Remote stream tracks:",
-        remoteStream.getTracks().map((t) => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          muted: t.muted,
-          readyState: t.readyState,
-        }))
-      );
-
-      remoteAudioRef.current.srcObject = remoteStream;
-
-      // Try to play the audio
-      remoteAudioRef.current
-        .play()
-        .then(() => {
-          console.log("🎵 Remote audio started playing successfully");
-          console.log("🎵 Audio element state:", {
-            paused: remoteAudioRef.current?.paused,
-            currentTime: remoteAudioRef.current?.currentTime,
-            volume: remoteAudioRef.current?.volume,
-            muted: remoteAudioRef.current?.muted,
-          });
-        })
-        .catch((error) => {
-          console.error("❌ Failed to play remote audio:", error);
-        });
-    }
-  }, [remoteStream]);
+  // REMOVED: Duplicate audio setup useEffect that was causing conflicts
+  // Audio is now handled entirely in the onRemoteStream callback to prevent interruptions
+  // This useEffect was setting up audio again after the callback already set it up
 
   // Format call duration
   const formatDuration = (seconds: number) => {
