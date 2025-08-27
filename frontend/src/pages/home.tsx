@@ -67,158 +67,102 @@ const Home: FC<HomeProps> = () => {
   // Initialize socket connection
   useEffect(() => {
     const initializeSocket = async () => {
+      if (!isAuthenticated || !authUser?._id) {
+        return;
+      }
+
+      if (socket.current?.connected) {
+        socket.current.emit("addUser", {
+          userId: authUser._id,
+          name: authUser.name,
+          email: authUser.email,
+          avatar: authUser.avatar,
+        });
+        return;
+      }
+
       try {
-        console.log("🔐 Home: initializeSocket called");
-        console.log("🔐 Home: isAuthenticated:", isAuthenticated);
-        console.log("🔐 Home: authUser:", authUser);
-        console.log("🔐 Home: authUser._id:", authUser?._id);
+        const newSocket = socketManager.createNewConnection();
+        socket.current = newSocket;
 
-        // Only create socket if user is authenticated
-        if (!isAuthenticated || !authUser?._id) {
-          console.log(
-            "❌ Home: User not authenticated, skipping socket initialization"
-          );
-          return;
-        }
+        newSocket.emit("addUser", {
+          userId: authUser._id,
+          name: authUser.name,
+          email: authUser.email,
+          avatar: authUser.avatar,
+        });
 
-        console.log(
-          "✅ Home: User is authenticated, proceeding with socket initialization"
-        );
+        newSocket.on("connect", () => {
+          console.log("Socket connected successfully");
+        });
 
-        // Add a small delay to ensure authentication state is fully restored
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Check if we need to create a new socket or reconnect existing one
-        if (!socket.current || !socket.current.connected) {
-          console.log("🔄 Home: Creating new socket connection...");
-          socket.current = await socketManager.createSocket();
-
-          // Setup socket event listeners
-          socket.current.on("connect", () => {
-            console.log(
-              "✅ Home: Socket connected with ID:",
-              socket.current?.id
-            );
-            // Add user immediately after connection
-            if (authUser?._id) {
-              console.log("🔄 Home: Adding user to socket:", authUser._id);
-              console.log("🔄 Home: User data being sent:", authUser);
-              socket.current?.emit("addUser", authUser._id, authUser);
-            } else {
-              console.log(
-                "❌ Home: No authUser._id available when socket connected"
-              );
-            }
-          });
-
-          socket.current.on("disconnect", (reason) => {
-            console.log("❌ Socket disconnected, reason:", reason);
-            // Try to reconnect after a delay
+        newSocket.on("disconnect", (reason) => {
+          console.log("Socket disconnected, reason:", reason);
+          
+          if (reason === "io server disconnect") {
+            console.log("Attempting to reconnect socket...");
             setTimeout(() => {
-              if (authUser?._id && isAuthenticated) {
-                console.log("🔄 Attempting to reconnect socket...");
-                initializeSocket();
+              if (socket.current) {
+                socket.current.connect();
               }
-            }, 2000);
-          });
-
-          socket.current.on("connect_error", (error) => {
-            console.error("Socket connection error:", error);
-            // Try to reconnect after error
-            setTimeout(() => {
-              if (authUser?._id && isAuthenticated) {
-                console.log("🔄 Attempting to reconnect after error...");
-                initializeSocket();
-              }
-            }, 3000);
-          });
-
-          socket.current.on("reconnect", (attemptNumber) => {
-            console.log(
-              "✅ Socket reconnected after",
-              attemptNumber,
-              "attempts"
-            );
-            // Re-add user after reconnection
-            if (authUser?._id) {
-              console.log(
-                "🔄 Re-adding user after reconnection:",
-                authUser._id
-              );
-              socket.current?.emit("addUser", authUser._id, authUser);
-            }
-          });
-
-          // Listen for users
-          socket.current.on("getUsers", (users) => {
-            if (authUser?._id) {
-              const filteredUser = users.filter(
-                (user: any) => user.userId !== authUser._id
-              );
-              setActiveUser(filteredUser);
-            }
-          });
-
-          // Listen for messages
-          socket.current.on("getMessage", (data) => {
-            console.log("Message received:", data);
-            dispatch(addMessage(data));
-            if (data.receiverId) {
-              dispatch(addUnreadMessage(data.receiverId));
-            }
-          });
-
-          // Listen for typing indicators
-          socket.current.on("userTyping", (data) => {
-            if (data.receiverId === authUser?._id) {
-              dispatch(setTypingUser(data.senderId));
-            }
-          });
-
-          socket.current.on("userStopTyping", (data) => {
-            if (data.receiverId === authUser?._id) {
-              dispatch(removeTypingUser(data.senderId));
-            }
-          });
-
-          // Listen for incoming calls
-          socket.current.on("incomingCall", (data) => {
-            console.log("Incoming call received:", data);
-            if (authUser?._id) {
-              setIncomingCall({
-                callId: data.callId,
-                callerId: data.callerId,
-                receiverId: authUser._id, // Add the missing receiverId
-                callType: data.callType,
-                callerName: data.callerName || "Unknown",
-                callerAvatar: data.callerAvatar,
-                status: "ringing" as const, // Add the missing status
-              });
-              setIsCallDialogOpen(true);
-            }
-          });
-        } else {
-          console.log(
-            "✅ Home: Socket already connected, reusing existing connection"
-          );
-          // Ensure user is added to existing socket
-          if (authUser?._id) {
-            console.log("🔄 Adding user to existing socket:", authUser._id);
-            socket.current.emit("addUser", authUser._id, authUser);
+            }, 1000);
           }
-        }
+        });
+
+        newSocket.on("connect_error", (error) => {
+          console.error("Socket connection error:", error);
+          
+          setTimeout(() => {
+            if (socket.current) {
+              socket.current.connect();
+            }
+          }, 1000);
+        });
+
+        newSocket.on("getUsers", (users) => {
+          setActiveUser(users);
+        });
+
+        newSocket.on("getMessage", (data) => {
+          console.log("Message received:", data);
+          dispatch(addMessage(data));
+          if (data.receiverId) {
+            dispatch(addUnreadMessage(data.receiverId));
+          }
+        });
+
+        newSocket.on("userTyping", (data) => {
+          if (data.receiverId === authUser?._id) {
+            dispatch(setTypingUser(data.senderId));
+          }
+        });
+
+        newSocket.on("userStopTyping", (data) => {
+          if (data.receiverId === authUser?._id) {
+            dispatch(removeTypingUser(data.senderId));
+          }
+        });
+
+        newSocket.on("incomingCall", (data) => {
+          console.log("Incoming call received:", data);
+          setIncomingCall({
+            callId: data.callId,
+            callerId: data.callerId,
+            receiverId: authUser._id, // Add the missing receiverId
+            callType: data.callType,
+            callerName: data.callerName || "Unknown",
+            callerAvatar: data.callerAvatar,
+            status: "ringing" as const, // Add the missing status
+          });
+          setIsCallDialogOpen(true);
+        });
       } catch (error) {
-        console.error("Failed to initialize socket:", error);
-        // Reset socket reference on error to allow retry
-        socket.current = null;
-
-        // Try to reconnect after a delay
+        console.error("Socket initialization failed:", error);
+        
         setTimeout(() => {
-          if (!socket.current && authUser?._id && isAuthenticated) {
-            console.log("Retrying socket initialization...");
-            initializeSocket();
-          }
-        }, 3000);
+          console.log("Retrying socket initialization...");
+          initializeSocket();
+        }, 2000);
       }
     };
 
@@ -260,22 +204,10 @@ const Home: FC<HomeProps> = () => {
 
   // Setup calling service when socket is available
   useEffect(() => {
-    const setupCallingService = async () => {
-      if (socket.current) {
-        console.log("🔄 HOME: Setting up calling service with socket...");
-        console.log("🔄 HOME: Socket ID:", socket.current?.id);
-        console.log("🔄 HOME: Socket connected:", socket.current?.connected);
-        await callingService.setSocket(socket.current);
-        console.log("✅ HOME: Calling service socket set successfully");
-      }
-    };
-
-    setupCallingService();
-
-    return () => {
-      // Don't cleanup calling service on unmount, let it persist
-      console.log("Component unmounting, keeping calling service alive");
-    };
+    if (socket.current) {
+      callingService.setSocket(socket.current);
+      console.log("Calling service socket set successfully");
+    }
   }, [socket.current]);
 
   // Remove duplicate useEffect hooks that were setting up duplicate event listeners
@@ -283,12 +215,7 @@ const Home: FC<HomeProps> = () => {
 
   // Mark messages as read when viewing a chat
   useEffect(() => {
-    console.log("🔍 Home: currentUserChat changed:", currentUserChat);
     if (currentUserChat && currentUserChat._id) {
-      console.log(
-        "🔍 Home: Marking messages as read for:",
-        currentUserChat._id
-      );
       dispatch(markMessagesAsRead(currentUserChat._id));
     }
   }, [currentUserChat, dispatch]);
@@ -309,132 +236,110 @@ const Home: FC<HomeProps> = () => {
 
   // Handle call actions
   const handleAcceptCall = async () => {
-    console.log("🔄 HOME: handleAcceptCall called");
-    console.log("🔄 HOME: Incoming call data:", incomingCall);
-    console.log("🔄 HOME: Current user ID:", authUser?._id);
-    console.log("🔄 HOME: Socket status:", !!socket.current);
-    console.log("🔄 HOME: Socket ID:", socket.current?.id);
-    console.log(
-      "🔄 HOME: Calling service socket ID:",
-      callingService.getSocket()?.id
-    );
+    if (!incomingCall || !authUser?._id || !socket.current) {
+      console.error("Cannot accept call: missing data");
+      return;
+    }
 
-    if (incomingCall && socket.current && authUser?._id) {
-      try {
-        // Emit accept call event to socket server
-        socket.current.emit("acceptCall", {
-          callerId: incomingCall.callerId,
-          receiverId: authUser._id,
-          callType: incomingCall.callType,
-        });
+    try {
+      console.log("Accepting incoming call...");
+      
+      // Emit accept call event to socket server
+      const acceptCallData = {
+        callerId: incomingCall.callerId,
+        receiverId: incomingCall.receiverId,
+        callType: incomingCall.callType,
+      };
 
-        console.log("✅ Accept call event emitted to socket server");
-        console.log("✅ Event data:", {
-          callerId: incomingCall.callerId,
-          receiverId: authUser._id,
-          callType: incomingCall.callType,
-        });
+      socket.current.emit("acceptCall", acceptCallData);
+      console.log("Accept call event emitted to socket server");
+      console.log("Event data:", {
+        callerId: acceptCallData.callerId,
+        receiverId: acceptCallData.receiverId,
+        callType: acceptCallData.callType,
+        timestamp: Date.now(),
+      });
 
-        // Update local state
-        setIsCallDialogOpen(true);
+      // Accept the call using calling service
+      await callingService.acceptCall(incomingCall);
 
-        // Accept the call using calling service
-        await callingService.acceptCall({
-          callId: incomingCall.callId || "",
-          callerId: incomingCall.callerId,
-          receiverId: authUser._id,
-          callType: incomingCall.callType,
-          callerName: incomingCall.callerName,
-          callerAvatar: incomingCall.callerAvatar,
-          status: "ringing",
-        });
+      // Update UI state
+      setIsCallDialogOpen(false);
+      setIncomingCall(null);
+      // setIsCallActive(true); // This state doesn't exist in the original code
 
-        console.log("✅ Call accepted successfully in calling service");
-        // The calling service will handle the call state changes
-      } catch (error) {
-        console.error("❌ Error accepting call:", error);
-        alert("Error accepting call. Please try again.");
-      }
-    } else {
-      console.error("❌ No incoming call data or socket available");
-      console.error("❌ Incoming call:", incomingCall);
-      console.error("❌ Socket:", socket.current);
+      console.log("Call accepted successfully in calling service");
+
+      // Start call duration timer
+      // setCallStartTime(Date.now()); // This state doesn't exist in the original code
+
+    } catch (error) {
+      console.error("Error accepting call:", error);
+      setIsCallDialogOpen(false);
+      setIncomingCall(null);
     }
   };
 
   const handleDeclineCall = async () => {
-    console.log("🔄 Home: Declining incoming call...");
-    console.log("Incoming call data:", incomingCall);
+    if (!incomingCall || !socket.current) {
+      console.error("Cannot decline call: missing data");
+      return;
+    }
 
-    if (incomingCall && socket.current && authUser?._id) {
-      try {
-        // Emit decline call event to socket server
-        socket.current.emit("declineCall", {
-          callerId: incomingCall.callerId,
-          receiverId: authUser._id,
-          callType: incomingCall.callType,
-        });
+    try {
+      console.log("Declining incoming call...");
+      console.log("Incoming call data:", incomingCall);
 
-        console.log("✅ Decline call event emitted to socket server");
+      // Emit decline call event to socket server
+      const declineCallData = {
+        callerId: incomingCall.callerId,
+        receiverId: incomingCall.receiverId,
+        callType: incomingCall.callType,
+        reason: "declined",
+      };
 
-        // Clean up local state
-        setIncomingCall(null);
-        setIsCallDialogOpen(false);
+      socket.current.emit("declineCall", declineCallData);
+      console.log("Decline call event emitted to socket server");
 
-        // Decline the call using calling service
-        await callingService.declineCall({
-          callId: incomingCall.callId || "",
-          callerId: incomingCall.callerId,
-          receiverId: authUser._id,
-          callType: incomingCall.callType,
-          callerName: incomingCall.callerName,
-          callerAvatar: incomingCall.callerAvatar,
-          status: "ringing",
-        });
+      // Stop any ringtone
+      callingService.stopRingtone();
 
-        console.log("✅ Call declined successfully");
-      } catch (error) {
-        console.error("❌ Error declining call:", error);
-        // Still clean up state even if there's an error
-        setIncomingCall(null);
-        setIsCallDialogOpen(false);
-      }
-    } else {
-      console.error("❌ No incoming call data or socket available");
-      // Clean up state
-      setIncomingCall(null);
+      // Update UI state
       setIsCallDialogOpen(false);
+      setIncomingCall(null);
+
+      console.log("Call declined successfully");
+
+    } catch (error) {
+      console.error("Error declining call:", error);
+      setIsCallDialogOpen(false);
+      setIncomingCall(null);
     }
   };
 
   const handleEndCall = async () => {
-    console.log("🔄 Home: Ending call...");
-    console.log("Current call state:", { incomingCall, isCallDialogOpen });
+    if (!socket.current) {
+      console.error("Cannot end call: no socket");
+      return;
+    }
 
     try {
-      // End the call using calling service
-      await callingService.endCall();
+      console.log("Ending call...");
+      console.log("Current call state:", { incomingCall, isCallDialogOpen });
 
-      console.log("✅ Call ended successfully");
+      // End the call in calling service
+      callingService.endCall();
 
-      // Clean up local state
-      setIncomingCall(null);
+      // Update UI state
       setIsCallDialogOpen(false);
+      // setIsCallActive(false); // This state doesn't exist in the original code
+      setIncomingCall(null);
+      // setCallStartTime(null); // This state doesn't exist in the original code
 
-      // Emit end call event to socket server if we have call data
-      if (incomingCall && socket.current && authUser?._id) {
-        socket.current.emit("endCall", {
-          callerId: incomingCall.callerId,
-          receiverId: authUser._id,
-          callType: incomingCall.callType,
-        });
-        console.log("✅ End call event emitted to socket server");
-      }
+      console.log("Call ended successfully");
+
     } catch (error) {
-      console.error("❌ Error ending call:", error);
-      // Still clean up state even if there's an error
-      setIncomingCall(null);
-      setIsCallDialogOpen(false);
+      console.error("Error ending call:", error);
     }
   };
 
@@ -1111,7 +1016,7 @@ const Home: FC<HomeProps> = () => {
           onCancel={handleDeclineCall} // Use decline as cancel for incoming calls
           callData={incomingCall}
           onCallEnded={() => {
-            console.log("🔄 Incoming call ended, refreshing call history...");
+            console.log("Incoming call ended, refreshing call history...");
             // Emit custom event to refresh call history
             window.dispatchEvent(
               new CustomEvent("callEnded", { detail: incomingCall })
