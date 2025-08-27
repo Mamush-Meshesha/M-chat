@@ -119,6 +119,12 @@ const Dashboardheader: FC<DashboardheaderProps> = ({
         if (callingService.isCallActive()) {
           console.log("🔊 Call is active, setting up audio interaction...");
           callingService.handleUserInteraction();
+
+          // Test audio playback
+          setTimeout(() => {
+            console.log("🔊 Testing audio playback from dashboard header...");
+            callingService.testAudioPlayback();
+          }, 5000); // Wait 5 seconds for call to fully establish
         }
       }, 3000); // Wait 3 seconds for call to establish
     } catch (error) {

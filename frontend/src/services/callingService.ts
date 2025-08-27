@@ -838,9 +838,12 @@ class CallingService {
         console.log("🔄 Remote stream updated, notifying UI...");
         this.onRemoteStream?.(this.remoteStream); // Notify UI to attach the stream
 
-        // Force audio playback for cross-device calls
-        console.log("🔊 Remote stream received, forcing audio playback...");
-        setTimeout(() => this.forceAudioPlayback(), 1000); // Wait 1 second for stream to stabilize
+        // Force audio playback for cross-device calls (only if not already handled by UI)
+        console.log(
+          "🔊 Remote stream received, checking if audio setup is needed..."
+        );
+        // Don't force audio playback here - let the UI component handle it
+        // This prevents conflicts between calling service and UI audio setup
       }
     };
 
@@ -1100,12 +1103,21 @@ class CallingService {
         this.onCallConnected(data);
       }
 
-      // Force audio playback for cross-device calls
-      console.log("🔊 Call connected, forcing audio playback...");
-      this.forceAudioPlayback();
+      // Don't force audio playback here - let the UI component handle it
+      console.log(
+        "🔊 Call connected, audio setup will be handled by UI component"
+      );
 
-      // Set up user interaction handler for audio
-      console.log("🔊 Setting up user interaction handler for audio...");
+      // Test audio playback to verify it's working
+      setTimeout(() => {
+        console.log("🔊 Testing audio playback after call connection...");
+        this.testAudioPlayback();
+      }, 3000); // Wait 3 seconds for everything to settle
+
+      // Set up user interaction handler for audio (only for fallback)
+      console.log(
+        "🔊 Setting up user interaction handler for audio fallback..."
+      );
       document.addEventListener("click", () => this.handleUserInteraction(), {
         once: true,
       });
@@ -1429,6 +1441,13 @@ class CallingService {
     if (this.remoteStream) {
       console.log("🔊 Force audio playback called");
 
+      // Check if we already have a pending audio element
+      if (this.pendingAudioElement) {
+        console.log("🔊 Audio element already exists, trying to play it...");
+        this.startPendingAudio();
+        return;
+      }
+
       // Create a new audio element to avoid conflicts
       const audioElement = new Audio();
       audioElement.srcObject = this.remoteStream;
@@ -1480,6 +1499,44 @@ class CallingService {
     };
   }
 
+  // Notify that UI has successfully set up audio (call this from UI components)
+  notifyAudioSetupComplete() {
+    console.log(
+      "🔊 UI has successfully set up audio, clearing pending audio..."
+    );
+    this.pendingAudioElement = null;
+  }
+
+  // Test if audio is actually working
+  testAudioPlayback() {
+    if (this.remoteStream) {
+      console.log("🔊 Testing audio playback...");
+
+      // Create a test audio element
+      const testAudio = new Audio();
+      testAudio.srcObject = this.remoteStream;
+      testAudio.volume = 0.5; // Lower volume for testing
+
+      // Try to play
+      testAudio
+        .play()
+        .then(() => {
+          console.log("✅ Test audio playback successful");
+          // Stop after a short duration
+          setTimeout(() => {
+            testAudio.pause();
+            testAudio.srcObject = null;
+            console.log("🔊 Test audio stopped");
+          }, 2000);
+        })
+        .catch((error) => {
+          console.error("❌ Test audio playback failed:", error);
+        });
+    } else {
+      console.log("❌ No remote stream available for audio test");
+    }
+  }
+
   // Handle user interaction to start audio (call this on click/touch events)
   handleUserInteraction() {
     console.log("👆 User interaction detected, attempting to start audio...");
@@ -1487,9 +1544,12 @@ class CallingService {
     // Start any pending audio
     this.startPendingAudio();
 
-    // Also try to force audio playback again
-    if (this.remoteStream) {
+    // Only force audio playback if UI hasn't already set it up
+    if (this.remoteStream && !this.pendingAudioElement) {
+      console.log("🔊 UI hasn't set up audio, forcing playback...");
       this.forceAudioPlayback();
+    } else {
+      console.log("🔊 Audio already set up by UI, skipping force playback");
     }
 
     // Log current audio status
