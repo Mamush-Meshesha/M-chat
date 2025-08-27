@@ -689,11 +689,13 @@ class CallingService {
 
       // Send call request
       if (this.socket) {
-        this.socket.emit("callRequest", {
+        this.socket.emit("initiateCall", {
           receiverId,
           callerId: this.getCurrentUserId(),
           callType,
           callId: callData.callId,
+          callerName: this.getCurrentUserName() || "Unknown User",
+          callerAvatar: "/profile.jpg",
         });
         console.log("✅ Call request sent");
       } else {
