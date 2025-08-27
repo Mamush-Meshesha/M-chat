@@ -5,14 +5,14 @@ class SocketManager {
   private socket: Socket | null = null;
   private isConnecting: boolean = false;
 
-  connect(): Socket {
+  async connect(): Promise<Socket> {
     if (this.socket?.connected) {
       return this.socket;
     }
 
     if (this.isConnecting) {
       // Wait for connection to complete
-      return new Promise((resolve) => {
+      return new Promise<Socket>((resolve) => {
         const checkConnection = () => {
           if (this.socket?.connected) {
             resolve(this.socket);
@@ -36,7 +36,7 @@ class SocketManager {
     this.isConnecting = true;
 
     try {
-      const socket = io(getApiUrl(), {
+      const socket = io(getApiUrl(""), {
         transports: ["websocket", "polling"],
         reconnection: true,
         reconnectionAttempts: 5,

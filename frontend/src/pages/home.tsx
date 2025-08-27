@@ -66,7 +66,7 @@ const Home: FC<HomeProps> = () => {
 
   // Initialize socket connection
   useEffect(() => {
-    const initializeSocket = async () => {
+    const initializeSocket = () => {
       if (!isAuthenticated || !authUser?._id) {
         return;
       }
@@ -76,7 +76,7 @@ const Home: FC<HomeProps> = () => {
           userId: authUser._id,
           name: authUser.name,
           email: authUser.email,
-          avatar: authUser.avatar,
+          avatar: authUser.avatar || "/profile.jpg",
         });
         return;
       }
@@ -89,7 +89,7 @@ const Home: FC<HomeProps> = () => {
           userId: authUser._id,
           name: authUser.name,
           email: authUser.email,
-          avatar: authUser.avatar,
+          avatar: authUser.avatar || "/profile.jpg",
         });
 
         newSocket.on("connect", () => {
@@ -98,7 +98,7 @@ const Home: FC<HomeProps> = () => {
 
         newSocket.on("disconnect", (reason) => {
           console.log("Socket disconnected, reason:", reason);
-          
+
           if (reason === "io server disconnect") {
             console.log("Attempting to reconnect socket...");
             setTimeout(() => {
@@ -111,7 +111,7 @@ const Home: FC<HomeProps> = () => {
 
         newSocket.on("connect_error", (error) => {
           console.error("Socket connection error:", error);
-          
+
           setTimeout(() => {
             if (socket.current) {
               socket.current.connect();
@@ -158,7 +158,7 @@ const Home: FC<HomeProps> = () => {
         });
       } catch (error) {
         console.error("Socket initialization failed:", error);
-        
+
         setTimeout(() => {
           console.log("Retrying socket initialization...");
           initializeSocket();
@@ -243,7 +243,7 @@ const Home: FC<HomeProps> = () => {
 
     try {
       console.log("Accepting incoming call...");
-      
+
       // Emit accept call event to socket server
       const acceptCallData = {
         callerId: incomingCall.callerId,
@@ -260,19 +260,11 @@ const Home: FC<HomeProps> = () => {
         timestamp: Date.now(),
       });
 
-      // Accept the call using calling service
-      await callingService.acceptCall(incomingCall);
-
       // Update UI state
       setIsCallDialogOpen(false);
       setIncomingCall(null);
-      // setIsCallActive(true); // This state doesn't exist in the original code
 
-      console.log("Call accepted successfully in calling service");
-
-      // Start call duration timer
-      // setCallStartTime(Date.now()); // This state doesn't exist in the original code
-
+      console.log("Call accepted successfully");
     } catch (error) {
       console.error("Error accepting call:", error);
       setIsCallDialogOpen(false);
@@ -309,7 +301,6 @@ const Home: FC<HomeProps> = () => {
       setIncomingCall(null);
 
       console.log("Call declined successfully");
-
     } catch (error) {
       console.error("Error declining call:", error);
       setIsCallDialogOpen(false);
@@ -337,7 +328,6 @@ const Home: FC<HomeProps> = () => {
       // setCallStartTime(null); // This state doesn't exist in the original code
 
       console.log("Call ended successfully");
-
     } catch (error) {
       console.error("Error ending call:", error);
     }
@@ -364,12 +354,7 @@ const Home: FC<HomeProps> = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Fixed Header - Responsive positioning */}
         <div className="sticky top-0 z-20 bg-white shadow-sm">
-          <Dashboardheader
-            activeUser={activeUser}
-            currentUserChat={currentUserChat}
-            socket={socket.current}
-            currentUserId={authUser?._id || ""}
-          />
+          <Dashboardheader currentUserChat={currentUserChat} />
         </div>
 
         {/* Desktop Chat Content - Hidden on mobile */}
@@ -1014,7 +999,6 @@ const Home: FC<HomeProps> = () => {
           onDecline={handleDeclineCall}
           onEndCall={handleEndCall}
           onCancel={handleDeclineCall} // Use decline as cancel for incoming calls
-          callData={incomingCall}
           onCallEnded={() => {
             console.log("Incoming call ended, refreshing call history...");
             // Emit custom event to refresh call history

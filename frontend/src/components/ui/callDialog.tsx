@@ -8,7 +8,6 @@ import {
   IoVideocamOff,
   IoClose,
 } from "react-icons/io5";
-import { BsThreeDots } from "react-icons/bs";
 import { IoDesktop } from "react-icons/io5";
 import callingService from "../../services/callingService";
 
@@ -23,7 +22,6 @@ interface CallDialogProps {
   onDecline?: () => void;
   onEndCall?: () => void;
   onCancel?: () => void;
-  callData?: any;
   onCallEnded?: () => void;
 }
 
@@ -38,7 +36,6 @@ const CallDialog: FC<CallDialogProps> = ({
   onDecline,
   onEndCall,
   onCancel,
-  callData,
   onCallEnded,
 }) => {
   const [isMuted, setIsMuted] = useState(false);
@@ -47,12 +44,10 @@ const CallDialog: FC<CallDialogProps> = ({
   const [isCallActive, setIsCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [remoteScreenShareStream, setRemoteScreenShareStream] =
     useState<MediaStream | null>(null);
-  const [connectionStatus, setConnectionStatus] =
-    useState<string>("Connecting...");
   const audioSetupComplete = useRef(false);
 
   const actualCallType = useMemo(() => {
@@ -62,15 +57,6 @@ const CallDialog: FC<CallDialogProps> = ({
     }
     return callType;
   }, [callType, callingService]);
-
-  const isActuallyVideoCall = useMemo(() => {
-    if (!remoteStream) return false;
-    const videoTracks = remoteStream.getVideoTracks();
-    return (
-      videoTracks.length > 0 &&
-      videoTracks.some((track) => track.readyState === "live")
-    );
-  }, [remoteStream]);
 
   const durationRef = useRef<number | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -102,7 +88,9 @@ const CallDialog: FC<CallDialogProps> = ({
 
     // Add event listeners for user interaction
     document.addEventListener("click", handleUserInteraction, { once: true });
-    document.addEventListener("touchstart", handleUserInteraction, { once: true });
+    document.addEventListener("touchstart", handleUserInteraction, {
+      once: true,
+    });
     document.addEventListener("keydown", handleUserInteraction, { once: true });
 
     return () => {
@@ -118,7 +106,7 @@ const CallDialog: FC<CallDialogProps> = ({
       const activeCall = callingService.getCurrentCall();
       if (activeCall) {
         setLocalStream(activeCall.localStream);
-        setRemoteStream(activeCall.remoteStream);
+
         setIsCallActive(activeCall.callData?.status === "active");
         setIsConnecting(activeCall.callData?.status === "connecting");
       }
@@ -173,15 +161,14 @@ const CallDialog: FC<CallDialogProps> = ({
 
     callingService.onRemoteStream = (stream) => {
       console.log("Remote stream received:", stream);
-      setRemoteStream(stream);
 
       // SINGLE AUDIO SETUP - only here, no duplicates
       if (remoteAudioRef.current && stream && !audioSetupComplete.current) {
         console.log("Setting up audio...");
-        
+
         // Mark as complete immediately to prevent duplicates
         audioSetupComplete.current = true;
-        
+
         // Stop any existing audio
         if (remoteAudioRef.current.srcObject) {
           remoteAudioRef.current.pause();
@@ -194,7 +181,8 @@ const CallDialog: FC<CallDialogProps> = ({
         remoteAudioRef.current.volume = 1.0;
 
         // Try to play
-        remoteAudioRef.current.play()
+        remoteAudioRef.current
+          .play()
           .then(() => {
             console.log("Audio started successfully");
             callingService.notifyAudioSetupComplete();
@@ -206,10 +194,10 @@ const CallDialog: FC<CallDialogProps> = ({
     };
 
     return () => {
-      callingService.onCallConnected = undefined;
-      callingService.onCallEnded = undefined;
-      callingService.onCallFailed = undefined;
-      callingService.onRemoteStream = undefined;
+      callingService.onCallConnected = null;
+      callingService.onCallEnded = null;
+      callingService.onCallFailed = null;
+      callingService.onRemoteStream = null;
     };
   }, [onClose, onCallEnded]);
 
@@ -250,7 +238,9 @@ const CallDialog: FC<CallDialogProps> = ({
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   // Handle call actions
@@ -307,10 +297,10 @@ const CallDialog: FC<CallDialogProps> = ({
           video: true,
           audio: false,
         });
-        
+
         callingService.startScreenShare(screenStream);
         setIsScreenSharing(true);
-        
+
         // Stop screen share when user stops sharing
         screenStream.getVideoTracks()[0].onended = () => {
           callingService.stopScreenShare();
@@ -406,10 +396,16 @@ const CallDialog: FC<CallDialogProps> = ({
             <button
               onClick={toggleVideo}
               className={`p-3 rounded-full ${
-                isVideoOff ? "bg-red-500 text-white" : "bg-gray-200 text-gray-700"
+                isVideoOff
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-200 text-gray-700"
               }`}
             >
-              {isVideoOff ? <IoVideocamOff size={24} /> : <IoVideocam size={24} />}
+              {isVideoOff ? (
+                <IoVideocamOff size={24} />
+              ) : (
+                <IoVideocam size={24} />
+              )}
             </button>
           )}
 
@@ -417,7 +413,9 @@ const CallDialog: FC<CallDialogProps> = ({
           <button
             onClick={toggleScreenShare}
             className={`p-3 rounded-full ${
-              isScreenSharing ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
+              isScreenSharing
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 text-gray-700"
             }`}
           >
             <IoDesktop size={24} />

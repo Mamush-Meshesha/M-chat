@@ -43,7 +43,7 @@ const CallingHeader: FC<ChatHeaderProps> = () => {
   // Listen for call ended events to refresh call history
   useEffect(() => {
     const handleCallEnded = () => {
-              console.log("Call ended event received, refreshing call history...");
+      console.log("Call ended event received, refreshing call history...");
       fetchCallHistory();
     };
 

@@ -4,12 +4,10 @@ import callingService from "../../services/callingService";
 
 interface DashboardHeaderProps {
   currentUserChat: any;
-  onCallInitiated: (callType: "audio" | "video") => void;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   currentUserChat,
-  onCallInitiated,
 }) => {
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
   const [callType, setCallType] = useState<"audio" | "video">("audio");
@@ -49,8 +47,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       setIsCallDialogOpen(true);
 
       // Initiate call
-      const success = await callingService.initiateCall(currentUserChat._id, type);
-      
+      const success = await callingService.initiateCall(
+        currentUserChat._id,
+        type
+      );
+
       if (success) {
         console.log("Call initiated successfully!");
         console.log("Call dialog state:", {
@@ -58,13 +59,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           isCallActive: false,
           callType: type,
         });
-        
+
         // Set up audio interaction after call is initiated
         setTimeout(() => {
           if (callingService.isCallInProgress()) {
             console.log("Call is active, setting up audio interaction...");
             callingService.handleUserInteraction();
-            
+
             // Test audio playback
             setTimeout(() => {
               callingService.testAudioPlayback();
@@ -136,7 +137,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               <p className="text-gray-600 mb-6">
                 Calling {currentUserChat?.name || "User"}...
               </p>
-              
+
               <div className="flex justify-center space-x-4">
                 <button
                   onClick={closeCallDialog}

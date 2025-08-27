@@ -6,6 +6,7 @@ interface User {
   name: string;
   email: string;
   createdAt: string;
+  avatar?: string;
 }
 
 interface Send {

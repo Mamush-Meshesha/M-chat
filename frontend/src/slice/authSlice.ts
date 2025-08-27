@@ -5,6 +5,7 @@ interface User {
   name: string;
   email: string;
   token?: string; // Add token back since backend doesn't use HTTP-only
+  avatar?: string;
 }
 
 export interface AuthState {

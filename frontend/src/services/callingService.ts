@@ -1,7 +1,4 @@
 import { Socket } from "socket.io-client";
-import socketManager from "./socketManager";
-import axios from "axios";
-import { getApiUrl } from "../config/config";
 
 interface CallData {
   callerId: string;
@@ -69,10 +66,13 @@ class CallingService {
     this.socket.on("callFailed", (error) => this.handleCallFailed(error));
   }
 
-  async initiateCall(receiverId: string, callType: "audio" | "video"): Promise<boolean> {
+  async initiateCall(
+    receiverId: string,
+    callType: "audio" | "video"
+  ): Promise<boolean> {
     try {
       console.log("Initiating call to:", receiverId, "Type:", callType);
-      
+
       // Clean up any existing call
       this.cleanupCall();
 
@@ -88,11 +88,7 @@ class CallingService {
 
       // Create peer connection
       console.log("Creating peer connection for caller...");
-      this.peerConnection = this.createPeerConnection({
-        callerId: this.socket?.id || "",
-        receiverId,
-        callType,
-      });
+      this.peerConnection = this.createPeerConnection();
 
       // Add local stream to peer connection
       this.localStream.getTracks().forEach((track) => {
@@ -131,9 +127,9 @@ class CallingService {
     }
   }
 
-  private createPeerConnection(callData: CallData): RTCPeerConnection {
+  private createPeerConnection(): RTCPeerConnection {
     console.log("Creating new RTCPeerConnection...");
-    
+
     const configuration: RTCConfiguration = {
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -148,7 +144,7 @@ class CallingService {
     peerConnection.ontrack = (event) => {
       console.log("Remote track received!");
       this.remoteStream = event.streams[0];
-      
+
       // Update active call
       if (this.activeCall) {
         this.activeCall.remoteStream = this.remoteStream;
@@ -159,7 +155,9 @@ class CallingService {
         this.onRemoteStream(this.remoteStream);
       }
 
-      console.log("Remote stream received, checking if audio setup is needed...");
+      console.log(
+        "Remote stream received, checking if audio setup is needed..."
+      );
     };
 
     // Handle ICE candidates
@@ -183,7 +181,10 @@ class CallingService {
 
     // Handle ICE connection state changes
     peerConnection.oniceconnectionstatechange = () => {
-      console.log("ICE connection state changed:", peerConnection.iceConnectionState);
+      console.log(
+        "ICE connection state changed:",
+        peerConnection.iceConnectionState
+      );
     };
 
     return peerConnection;
@@ -191,13 +192,13 @@ class CallingService {
 
   private handleCallAccepted(data: any) {
     console.log("Call accepted data:", data);
-    
+
     if (!this.activeCall) {
       console.error("No active call to accept");
       return;
     }
 
-    const { callerId, receiverId, callType, receiverSocketId, callId } = data;
+    const { callerId, receiverId } = data;
     const currentUserId = this.socket?.id;
 
     console.log("Current active call:", this.activeCall);
@@ -206,7 +207,10 @@ class CallingService {
     console.log("Event data callerId:", callerId);
     console.log("Event data receiverId:", receiverId);
     console.log("Socket ID:", this.socket?.id);
-    console.log("Socket ready state:", this.socket?.connected ? "connected" : "disconnected");
+    console.log(
+      "Socket ready state:",
+      this.socket?.connected ? "connected" : "disconnected"
+    );
 
     // Track event count
     this.eventCounters.callAccepted++;
@@ -215,7 +219,7 @@ class CallingService {
     // Check if this event is for us
     if (callerId === currentUserId) {
       console.log("We are the caller, processing callAccepted event");
-      
+
       // Update call status
       this.activeCall.callData.status = "active";
       this.activeCall.callData.startTime = Date.now();
@@ -223,7 +227,9 @@ class CallingService {
       console.log("Call start time set:", this.activeCall.callData.startTime);
 
       // We're the caller, send WebRTC offer after call accepted
-      console.log("We're the caller, sending WebRTC offer after call accepted...");
+      console.log(
+        "We're the caller, sending WebRTC offer after call accepted..."
+      );
       console.log("Active call caller ID:", this.activeCall.callData.callerId);
       console.log("Current user ID:", currentUserId);
 
@@ -236,32 +242,32 @@ class CallingService {
       setTimeout(() => {
         this.createAndSendOffer();
       }, 1000);
-    } else if (receiverId === currentUserId) {
-      console.log("We are the receiver, call already accepted");
     } else {
-      console.warn("Call accepted event received for different users");
+      console.log("We are the receiver, call already accepted");
     }
   }
 
   private async createAndSendOffer() {
     if (!this.peerConnection || !this.socket || !this.activeCall) {
-      console.error("Cannot create offer: missing peer connection, socket, or active call");
+      console.error(
+        "Cannot create offer: missing peer connection, socket, or active call"
+      );
       return;
     }
 
     try {
       console.log("Creating WebRTC offer...");
-      
+
       // Analyze local stream
       const localTracks = this.localStream?.getTracks() || [];
-      const videoTracks = localTracks.filter(track => track.kind === "video");
-      const audioTracks = localTracks.filter(track => track.kind === "audio");
-      
+      const videoTracks = localTracks.filter((track) => track.kind === "video");
+      const audioTracks = localTracks.filter((track) => track.kind === "audio");
+
       console.log("Local stream analysis:", {
         totalTracks: localTracks.length,
         videoTracks: videoTracks.length,
         audioTracks: audioTracks.length,
-        trackDetails: localTracks.map(track => ({
+        trackDetails: localTracks.map((track) => ({
           kind: track.kind,
           enabled: track.enabled,
           readyState: track.readyState,
@@ -272,18 +278,24 @@ class CallingService {
       console.log("Offer created:", offer);
 
       // Analyze offer SDP
-      const sdpLines = offer.sdp.split("\n");
-      const videoLines = sdpLines.filter(line => line.startsWith("m=video"));
-      const audioLines = sdpLines.filter(line => line.startsWith("m=audio"));
-      
-      console.log("Offer SDP analysis:", {
-        sdpType: offer.type,
-        hasVideo: videoLines.length > 0,
-        hasAudio: audioLines.length > 0,
-        videoLines: videoLines.length,
-        audioLines: audioLines.length,
-        sdpLength: offer.sdp.length,
-      });
+      if (offer.sdp) {
+        const sdpLines = offer.sdp.split("\n");
+        const videoLines = sdpLines.filter((line: string) =>
+          line.startsWith("m=video")
+        );
+        const audioLines = sdpLines.filter((line: string) =>
+          line.startsWith("m=audio")
+        );
+
+        console.log("Offer SDP analysis:", {
+          sdpType: offer.type,
+          hasVideo: videoLines.length > 0,
+          hasAudio: audioLines.length > 0,
+          videoLines: videoLines.length,
+          audioLines: audioLines.length,
+          sdpLength: offer.sdp.length,
+        });
+      }
 
       await this.peerConnection.setLocalDescription(offer);
       console.log("Offer set as local description");
@@ -303,9 +315,11 @@ class CallingService {
       this.socket.emit("test", { message: "Offer sent successfully" });
       console.log("Test event emitted to socket server");
 
-      console.log("Offer sent to receiver:", this.activeCall.callData.receiverId);
+      console.log(
+        "Offer sent to receiver:",
+        this.activeCall.callData.receiverId
+      );
       console.log("Offer creation and sending completed successfully");
-
     } catch (error) {
       console.error("Failed to create and send offer:", error);
     }
@@ -314,7 +328,7 @@ class CallingService {
   private async handleOffer(data: any) {
     try {
       const { offer, receiverId, senderId } = data;
-      
+
       if (!this.peerConnection) {
         console.error("No peer connection to handle offer");
         return;
@@ -346,7 +360,6 @@ class CallingService {
         });
         console.log("Answer sent to caller:", senderId);
       }
-
     } catch (error) {
       console.error("Failed to handle offer:", error);
     }
@@ -354,8 +367,8 @@ class CallingService {
 
   private async handleAnswer(data: any) {
     try {
-      const { answer, receiverId, senderId, timestamp, isCrossDevice } = data;
-      
+      const { answer, receiverId, senderId } = data;
+
       console.log("Received answer:", data);
       console.log("Answer data:", {
         hasAnswer: !!answer,
@@ -386,26 +399,34 @@ class CallingService {
       console.log("Answer set as remote description");
 
       // Analyze answer SDP
-      const sdpLines = answer.sdp.split("\n");
-      const videoLines = sdpLines.filter(line => line.startsWith("m=video"));
-      const audioLines = sdpLines.filter(line => line.startsWith("m=audio"));
-      
-      console.log("Answer SDP analysis:", {
-        sdpType: answer.type,
-        hasVideo: videoLines.length > 0,
-        hasAudio: audioLines.length > 0,
-        videoLines: videoLines.length,
-        audioLines: audioLines.length,
-        sdpLength: answer.sdp.length,
-      });
+      if (answer.sdp) {
+        const sdpLines = answer.sdp.split("\n");
+        const videoLines = sdpLines.filter((line: string) =>
+          line.startsWith("m=video")
+        );
+        const audioLines = sdpLines.filter((line: string) =>
+          line.startsWith("m=audio")
+        );
+
+        console.log("Answer SDP analysis:", {
+          sdpType: answer.type,
+          hasVideo: videoLines.length > 0,
+          hasAudio: audioLines.length > 0,
+          videoLines: videoLines.length,
+          audioLines: audioLines.length,
+          sdpLength: answer.sdp.length,
+        });
+      }
 
       // Process any buffered ICE candidates
-      console.log("Processing buffered ICE candidates after remote description set...");
-      
+      console.log(
+        "Processing buffered ICE candidates after remote description set..."
+      );
+
       // Check if ICE connection is stuck
       if (this.peerConnection.iceConnectionState === "new") {
         console.log("ICE connection stuck in 'new' state, forcing restart...");
-        
+
         // Force ICE restart
         try {
           await this.peerConnection.restartIce();
@@ -417,15 +438,20 @@ class CallingService {
 
       // Force connection establishment
       console.log("Forcing connection establishment after answer...");
-      
+
       // Create a data channel to force ICE connection
       try {
-        const dataChannel = this.peerConnection.createDataChannel("force-connection");
+        const dataChannel =
+          this.peerConnection.createDataChannel("force-connection");
         dataChannel.onopen = () => {
-          console.log("Data channel opened, ICE connection should be established");
+          console.log(
+            "Data channel opened, ICE connection should be established"
+          );
           dataChannel.close();
         };
-        console.log("Data channel created to force ICE connection (caller side)");
+        console.log(
+          "Data channel created to force ICE connection (caller side)"
+        );
       } catch (error) {
         console.log("Data channel creation failed (may already exist):", error);
       }
@@ -434,8 +460,14 @@ class CallingService {
       console.log("After setting remote description:");
       console.log("Local tracks:", this.peerConnection.getSenders().length);
       console.log("Remote tracks:", this.peerConnection.getReceivers().length);
-      console.log("Peer connection state:", this.peerConnection.connectionState);
-      console.log("ICE connection state:", this.peerConnection.iceConnectionState);
+      console.log(
+        "Peer connection state:",
+        this.peerConnection.connectionState
+      );
+      console.log(
+        "ICE connection state:",
+        this.peerConnection.iceConnectionState
+      );
 
       // Log peer connection state after answer
       console.log("Peer connection state after answer:", {
@@ -446,7 +478,6 @@ class CallingService {
       });
 
       console.log("WebRTC connection established! Audio should now work.");
-
     } catch (error) {
       console.error("Failed to handle answer:", error);
     }
@@ -454,8 +485,8 @@ class CallingService {
 
   private handleIceCandidate(data: any) {
     try {
-      const { candidate, receiverId, senderId } = data;
-      
+      const { candidate } = data;
+
       if (!this.peerConnection) {
         console.error("No peer connection to handle ICE candidate");
         return;
@@ -470,7 +501,6 @@ class CallingService {
         this.pendingOffers.push(candidate);
         console.log("ICE candidate buffered (remote description not set yet)");
       }
-
     } catch (error) {
       console.error("Failed to handle ICE candidate:", error);
     }
@@ -479,7 +509,7 @@ class CallingService {
   private handleCallEnded() {
     console.log("Call ended event received");
     this.cleanupCall();
-    
+
     if (this.onCallEnded) {
       this.onCallEnded();
     }
@@ -488,7 +518,7 @@ class CallingService {
   private handleCallFailed(error: any) {
     console.error("Call failed event received:", error);
     this.cleanupCall();
-    
+
     if (this.onCallFailed) {
       this.onCallFailed(error);
     }
@@ -496,38 +526,38 @@ class CallingService {
 
   private cleanupCall() {
     console.log("Cleaning up call resources...");
-    
+
     // Clear pending offers
     this.pendingOffers = [];
     console.log("Pending offers cleared");
-    
+
     // Reset event counters
-    Object.keys(this.eventCounters).forEach(key => {
+    Object.keys(this.eventCounters).forEach((key) => {
       this.eventCounters[key as keyof typeof this.eventCounters] = 0;
     });
     console.log("Event counters reset");
-    
+
     // Close peer connection
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
     }
-    
+
     // Stop local stream tracks
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
     }
-    
+
     // Clear remote stream
     this.remoteStream = null;
-    
+
     // Clear active call
     this.activeCall = null;
-    
+
     // Clear pending audio element
     this.pendingAudioElement = null;
-    
+
     console.log("Call resources cleaned up");
   }
 
@@ -563,25 +593,25 @@ class CallingService {
   forceAudioPlayback() {
     if (this.remoteStream) {
       console.log("Force audio playback called");
-      
+
       // Check if we already have a pending audio element
       if (this.pendingAudioElement) {
         console.log("Audio element already exists, skipping creation");
         return;
       }
-      
+
       // Create a new audio element to avoid conflicts
       const audioElement = new Audio();
       audioElement.srcObject = this.remoteStream;
       audioElement.autoplay = true;
       audioElement.volume = 1.0;
-      
+
       // Handle autoplay restrictions
-      audioElement.play().catch((error) => {
+      audioElement.play().catch(() => {
         console.log("Audio play failed, will retry on user interaction");
         this.pendingAudioElement = audioElement;
       });
-      
+
       console.log("Audio element created and configured for force playback");
     }
   }
@@ -615,17 +645,18 @@ class CallingService {
   testAudioPlayback() {
     if (this.remoteStream) {
       console.log("Testing audio playback...");
-      
+
       // Create a test audio element
       const testAudio = new Audio();
       testAudio.srcObject = this.remoteStream;
       testAudio.volume = 0.5; // Lower volume for testing
-      
+
       // Try to play
-      testAudio.play()
+      testAudio
+        .play()
         .then(() => {
           console.log("Test audio playback successful");
-          
+
           // Stop after 2 seconds
           setTimeout(() => {
             testAudio.pause();
@@ -640,16 +671,18 @@ class CallingService {
   }
 
   isCallInProgress(): boolean {
-    return this.activeCall?.callData.status === "ringing" || 
-           this.activeCall?.callData.status === "active";
+    return (
+      this.activeCall?.callData.status === "ringing" ||
+      this.activeCall?.callData.status === "active"
+    );
   }
 
   handleUserInteraction() {
     console.log("User interaction detected, attempting to start audio...");
-    
+
     // Start any pending audio
     this.startPendingAudio();
-    
+
     // Only force audio playback if UI hasn't already set it up
     if (this.remoteStream && !this.pendingAudioElement) {
       console.log("UI hasn't set up audio, forcing playback...");
@@ -657,7 +690,7 @@ class CallingService {
     } else {
       console.log("Audio already set up by UI, skipping force playback");
     }
-    
+
     // Log current audio status
     console.log("Audio debug info:", this.getAudioDebugInfo());
   }
@@ -692,7 +725,9 @@ class CallingService {
   // Screen sharing methods
   startScreenShare(stream: MediaStream) {
     if (this.peerConnection) {
-      const sender = this.peerConnection.getSenders().find(s => s.track?.kind === "video");
+      const sender = this.peerConnection
+        .getSenders()
+        .find((s) => s.track?.kind === "video");
       if (sender) {
         sender.replaceTrack(stream.getVideoTracks()[0]);
       }
@@ -701,7 +736,9 @@ class CallingService {
 
   stopScreenShare() {
     if (this.peerConnection && this.localStream) {
-      const sender = this.peerConnection.getSenders().find(s => s.track?.kind === "video");
+      const sender = this.peerConnection
+        .getSenders()
+        .find((s) => s.track?.kind === "video");
       const localVideoTrack = this.localStream.getVideoTracks()[0];
       if (sender && localVideoTrack) {
         sender.replaceTrack(localVideoTrack);
@@ -723,4 +760,3 @@ class CallingService {
 }
 
 export default new CallingService();
-
